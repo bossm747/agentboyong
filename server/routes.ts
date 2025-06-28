@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
@@ -480,7 +480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/pareng-boyong', express.static(path.join(process.cwd(), 'workspace/agent-zero/webui')));
   
   // Route for Pareng Boyong main interface - specific route must come before static middleware
-  app.get('/pareng-boyong/', (req, res) => {
+  app.get('/pareng-boyong/', (req: Request, res: Response) => {
     res.sendFile(path.resolve(process.cwd(), 'workspace/agent-zero/webui/index.html'));
   });
 

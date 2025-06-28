@@ -243,6 +243,15 @@ export default function SandboxPage() {
           </Sheet>
 
           {/* Desktop Controls */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="hidden sm:inline-flex text-text-secondary hover:text-text-primary bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30"
+            onClick={() => window.open('/pareng-boyong/', '_blank')}
+            title="Open Pareng Boyong - Filipino AI AGI"
+          >
+            🇵🇭 Pareng Boyong
+          </Button>
           <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-text-secondary hover:text-text-primary">
             <Settings className="h-4 w-4" />
           </Button>
