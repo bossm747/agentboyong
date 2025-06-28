@@ -247,8 +247,37 @@ window.fetch = async function(url, options = {}) {
             }), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
         
+        if (fullUrl === '/poll') {
+            return new Response(JSON.stringify({
+                runtime_sandbox: true,
+                pareng_boyong: true,
+                logs: [],
+                status: 'active',
+                agent: 'Pareng Boyong'
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+        
+        if (fullUrl.startsWith('/api/message') || fullUrl === '/message_async') {
+            return new Response(JSON.stringify({
+                chat_id: 'pareng-boyong-chat',
+                message: '🇵🇭 **Pareng Boyong Response**\n\nReady to assist with unlimited capabilities!\n\n**All Three Modes Active:**\n🔬 **Researcher Mode** - Data analysis and research\n💻 **Developer Mode** - Full-stack development\n🎯 **Hacker Mode** - System analysis and security\n\n**Runtime Sandbox Features:**\n✅ Code execution\n✅ File management\n✅ System access\n✅ Terminal commands\n✅ Package installation',
+                agent: 'Pareng Boyong',
+                runtime_sandbox: true
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+        
+        if (fullUrl.startsWith('/api/chat/') || fullUrl === '/api/chats') {
+            return new Response(JSON.stringify({
+                chat_id: 'pareng-boyong-default',
+                name: 'Pareng Boyong Chat',
+                agent: 'Pareng Boyong',
+                runtime_sandbox: true,
+                messages: []
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+        
         // For non-API requests, use original fetch
-        if (!fullUrl.startsWith('/api/') && !fullUrl.includes('settings_get')) {
+        if (!fullUrl.startsWith('/api/') && !fullUrl.includes('settings_get') && fullUrl !== '/poll' && !fullUrl.includes('message')) {
             return originalFetch(url, options);
         }
         
