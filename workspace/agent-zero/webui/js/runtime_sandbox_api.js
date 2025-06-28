@@ -207,8 +207,9 @@ window.fetch = async function(url, options = {}) {
         // Convert relative URLs to absolute if needed
         const fullUrl = url.startsWith('/') ? url : '/' + url;
         
-        // Handle API endpoints
-        if (fullUrl === '/api/tasks') {
+        // Handle API endpoints - be more flexible with task endpoints
+        if (fullUrl === '/api/tasks' || fullUrl.includes('/tasks') || fullUrl.includes('task')) {
+            console.log('🇵🇭 Handling tasks request:', fullUrl);
             return new Response(JSON.stringify([
                 {
                     id: 'pareng-boyong-ready',
@@ -218,7 +219,9 @@ window.fetch = async function(url, options = {}) {
                     agent: 'Pareng Boyong',
                     system_prompt: 'You are Pareng Boyong, a Filipino AI AGI Super Agent',
                     prompt: 'Ready to assist with unlimited capabilities!',
-                    runtime_sandbox: true
+                    runtime_sandbox: true,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
                 }
             ]), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
@@ -241,22 +244,79 @@ window.fetch = async function(url, options = {}) {
         if (fullUrl === '/settings_get' || fullUrl === '/api/settings') {
             return new Response(JSON.stringify({
                 settings: {
-                    sections: {
-                        'agent': {
-                            'name': 'Pareng Boyong',
-                            'type': 'Filipino AI AGI Super Agent',
-                            'runtime_sandbox': true
+                    sections: [
+                        {
+                            id: 'agent',
+                            tab: 'agent',
+                            title: 'Agent Configuration',
+                            description: 'Configure Pareng Boyong AI AGI Super Agent',
+                            fields: [
+                                {
+                                    type: 'text',
+                                    name: 'agent_name',
+                                    title: 'Agent Name',
+                                    value: 'Pareng Boyong',
+                                    description: 'Filipino AI AGI Super Agent'
+                                },
+                                {
+                                    type: 'select',
+                                    name: 'agent_mode',
+                                    title: 'Active Mode',
+                                    value: 'all',
+                                    options: [
+                                        { value: 'all', title: 'All Modes Active' },
+                                        { value: 'researcher', title: 'Researcher Mode' },
+                                        { value: 'developer', title: 'Developer Mode' },
+                                        { value: 'hacker', title: 'Hacker Mode' }
+                                    ],
+                                    description: 'Select the active AGI mode'
+                                },
+                                {
+                                    type: 'checkbox',
+                                    name: 'runtime_sandbox',
+                                    title: 'Runtime Sandbox',
+                                    value: true,
+                                    description: 'Enable runtime sandbox for secure execution'
+                                }
+                            ]
                         },
-                        'modes': {
-                            'researcher': true,
-                            'developer': true,
-                            'hacker': true
-                        },
-                        'system': {
-                            'status': 'active',
-                            'backend': 'runtime_sandbox'
+                        {
+                            id: 'capabilities',
+                            tab: 'agent',
+                            title: 'Capabilities',
+                            description: 'Runtime Sandbox Capabilities',
+                            fields: [
+                                {
+                                    type: 'checkbox',
+                                    name: 'code_execution',
+                                    title: 'Code Execution',
+                                    value: true,
+                                    description: 'Execute Python, JavaScript, and other languages'
+                                },
+                                {
+                                    type: 'checkbox',
+                                    name: 'file_management',
+                                    title: 'File Management',
+                                    value: true,
+                                    description: 'Create, read, update, and delete files'
+                                },
+                                {
+                                    type: 'checkbox',
+                                    name: 'system_access',
+                                    title: 'System Access',
+                                    value: true,
+                                    description: 'Terminal commands and system monitoring'
+                                },
+                                {
+                                    type: 'checkbox',
+                                    name: 'package_installation',
+                                    title: 'Package Installation',
+                                    value: true,
+                                    description: 'Install packages and dependencies'
+                                }
+                            ]
                         }
-                    }
+                    ]
                 },
                 runtime_sandbox: true,
                 agent: 'Pareng Boyong',
@@ -345,16 +405,21 @@ window.fetch = async function(url, options = {}) {
             }), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
         
-        // For non-API requests, use original fetch
-        if (!fullUrl.startsWith('/api/') && !fullUrl.includes('settings_get') && fullUrl !== '/poll' && !fullUrl.includes('message')) {
+        // For static resources (JS, CSS, images), use original fetch
+        if (fullUrl.includes('.js') || fullUrl.includes('.css') || fullUrl.includes('.png') || 
+            fullUrl.includes('.jpg') || fullUrl.includes('.svg') || fullUrl.includes('.ico') ||
+            (!fullUrl.startsWith('/api/') && !fullUrl.includes('settings_get') && 
+             fullUrl !== '/poll' && !fullUrl.includes('message') && !fullUrl.includes('task'))) {
             return originalFetch(url, options);
         }
         
-        // Default API response
+        // Default API response for any remaining unhandled endpoints
+        console.log('🇵🇭 Default API response for:', fullUrl);
         return new Response(JSON.stringify({
             success: true,
             runtime_sandbox: true,
-            pareng_boyong: true
+            pareng_boyong: true,
+            message: 'Runtime sandbox active'
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
         
     } catch (error) {
