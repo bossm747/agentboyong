@@ -8,6 +8,8 @@ import fs from "fs/promises";
 import { storage } from "./storage";
 import { FileSystemService } from "./services/fileSystem";
 import { TerminalService } from "./services/terminal";
+import { AgentContextManager } from './agent-zero/context';
+import { AgentProcessor } from './agent-zero/agent-processor';
 import { systemMonitor } from "./services/systemMonitor";
 import { insertFileSchema, insertEnvironmentVariableSchema } from "@shared/schema";
 
@@ -628,6 +630,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
       agent: 'Pareng Boyong',
       capabilities: ['researcher', 'developer', 'hacker']
     });
+  });
+
+  // Agent Zero API Implementation - Complete System
+
+  // Poll endpoint - heart of Agent Zero real-time system
+  app.post('/agent-zero/poll', (req: Request, res: Response) => {
+    const { context, log_from = 0, timezone = 'UTC' } = req.body;
+    
+    if (!context) {
+      // Create new context if none provided
+      const newContext = AgentContextManager.createContext();
+      const pollResponse = AgentContextManager.serializePollResponse(newContext.id, log_from);
+      return res.json(pollResponse);
+    }
+
+    const pollResponse = AgentContextManager.serializePollResponse(context, log_from);
+    if (!pollResponse) {
+      return res.status(404).json({ error: 'Context not found' });
+    }
+
+    res.json(pollResponse);
+  });
+
+  // Message endpoint - main conversation handler
+  app.post('/agent-zero/message', async (req: Request, res: Response) => {
+    try {
+      const { text, context } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ error: 'Message text required' });
+      }
+
+      let contextId = context;
+      if (!contextId) {
+        const newContext = AgentContextManager.createContext();
+        contextId = newContext.id;
+      }
+
+      // Process message with Agent processor
+      const processor = new AgentProcessor('agent-zero-session');
+      const response = await processor.processMessage(contextId, text);
+
+      res.json({
+        message: response.content,
+        context: contextId
+      });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  // Context management endpoints
+  app.get('/agent-zero/contexts', (req: Request, res: Response) => {
+    const contexts = AgentContextManager.getAllContexts();
+    const serialized = contexts.map(ctx => AgentContextManager.serializeContext(ctx));
+    res.json(serialized);
+  });
+
+  app.post('/agent-zero/context/create', (req: Request, res: Response) => {
+    const { mode = 'default', name } = req.body;
+    
+    let systemPrompt = 'You are Pareng Boyong, a Filipino AI AGI Super Agent with unlimited capabilities.';
+    
+    if (mode === 'researcher') {
+      systemPrompt = 'You are Pareng Boyong in Researcher Mode. You excel at finding information, analyzing data, and conducting thorough research.';
+    } else if (mode === 'developer') {
+      systemPrompt = 'You are Pareng Boyong in Developer Mode. You are an expert programmer who can write, debug, and optimize code in any language.';
+    } else if (mode === 'hacker') {
+      systemPrompt = 'You are Pareng Boyong in Hacker Mode. You have advanced system administration and security analysis capabilities.';
+    }
+
+    const context = AgentContextManager.createContext(name, 'user', {
+      system_prompt: systemPrompt,
+      prompts_subdir: mode
+    });
+
+    // Add welcome message
+    AgentContextManager.addLog(context.id, {
+      type: 'system',
+      heading: 'System',
+      content: `Welcome to Pareng Boyong ${mode} mode! I'm ready to assist you with unlimited capabilities in this secure runtime sandbox.`,
+      kvps: { mode, initialization: true }
+    });
+
+    res.json({
+      context_id: context.id,
+      mode,
+      message: 'Context created successfully'
+    });
+  });
+
+  app.delete('/agent-zero/context/:id', (req: Request, res: Response) => {
+    const { id } = req.params;
+    const removed = AgentContextManager.removeContext(id);
+    
+    if (removed) {
+      res.json({ message: 'Context removed successfully' });
+    } else {
+      res.status(404).json({ error: 'Context not found' });
+    }
+  });
+
+  // Task scheduler endpoints
+  app.get('/agent-zero/tasks', (req: Request, res: Response) => {
+    // For now, return empty array - full task scheduler coming next
+    res.json([]);
+  });
+
+  app.post('/agent-zero/task/create', (req: Request, res: Response) => {
+    const { name, type, system_prompt, prompt, schedule } = req.body;
+    
+    // Create task context
+    const taskContext = AgentContextManager.createContext(name, 'task', {
+      system_prompt: system_prompt || 'You are a task execution agent.'
+    });
+
+    res.json({
+      task_id: taskContext.id,
+      message: 'Task created successfully'
+    });
+  });
+
+  // File operations through Agent Zero
+  app.get('/agent-zero/files', async (req: Request, res: Response) => {
+    try {
+      const sessionId = 'agent-zero-session';
+      const fileSystem = new (await import('./services/fileSystem')).FileSystemService(sessionId);
+      const files = await fileSystem.getFileTree();
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.post('/agent-zero/file/create', async (req: Request, res: Response) => {
+    try {
+      const { path, content } = req.body;
+      const sessionId = 'agent-zero-session';
+      const fileSystem = new (await import('./services/fileSystem')).FileSystemService(sessionId);
+      await fileSystem.writeFile(path, content);
+      res.json({ message: 'File created successfully' });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  app.get('/agent-zero/file/:path', async (req: Request, res: Response) => {
+    try {
+      const { path } = req.params;
+      const sessionId = 'agent-zero-session';
+      const fileSystem = new (await import('./services/fileSystem')).FileSystemService(sessionId);
+      const content = await fileSystem.readFile(decodeURIComponent(path));
+      res.json({ content });
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  // Terminal/Command execution
+  app.post('/agent-zero/execute', async (req: Request, res: Response) => {
+    try {
+      const { command, args = [] } = req.body;
+      const sessionId = 'agent-zero-session';
+      const terminal = new (await import('./services/terminal')).TerminalService(sessionId);
+      const result = await terminal.executeCommand(command, args);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
   });
 
   // settings_get endpoint moved to index.ts to bypass JSON parsing
