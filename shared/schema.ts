@@ -1,4 +1,5 @@
 import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -95,6 +96,42 @@ export type Process = typeof processes.$inferSelect;
 
 export type InsertEnvironmentVariable = z.infer<typeof insertEnvironmentVariableSchema>;
 export type EnvironmentVariable = typeof environmentVariables.$inferSelect;
+
+// Database relations
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+}));
+
+export const sessionsRelations = relations(sessions, ({ one, many }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+  files: many(files),
+  processes: many(processes),
+  environmentVariables: many(environmentVariables),
+}));
+
+export const filesRelations = relations(files, ({ one }) => ({
+  session: one(sessions, {
+    fields: [files.sessionId],
+    references: [sessions.id],
+  }),
+}));
+
+export const processesRelations = relations(processes, ({ one }) => ({
+  session: one(sessions, {
+    fields: [processes.sessionId],
+    references: [sessions.id],
+  }),
+}));
+
+export const environmentVariablesRelations = relations(environmentVariables, ({ one }) => ({
+  session: one(sessions, {
+    fields: [environmentVariables.sessionId],
+    references: [sessions.id],
+  }),
+}));
 
 export interface SystemStats {
   cpu: number;
