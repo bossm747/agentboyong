@@ -115,12 +115,12 @@ export default function ParengBoyongDemo() {
             >
               {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-cyan-400/50">
+            <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center font-bold text-sm shadow-lg shadow-cyan-400/50 border border-cyan-400/50">
               🇵🇭
             </div>
             <div>
-              <h1 className="font-bold text-lg text-cyan-400">Pareng Boyong</h1>
-              <p className="text-sm text-gray-400 hidden sm:block">Filipino AI AGI Super Agent by InnovateHub PH</p>
+              <h1 className="font-bold text-lg text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text">Pareng Boyong</h1>
+              <p className="text-sm text-cyan-300 hidden sm:block">Filipino AI AGI Super Agent by InnovateHub PH</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -160,7 +160,7 @@ export default function ParengBoyongDemo() {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-gray-400 hover:text-white hover:bg-gray-800"
+              className="text-cyan-400 hover:text-purple-300 hover:bg-gray-800/50"
               onClick={() => setIsSidebarOpen(false)}
             >
               <X className="h-4 w-4" />
@@ -187,8 +187,8 @@ export default function ParengBoyongDemo() {
                     }
                   }}
                 >
-                  <div className="font-medium text-xs text-white">{mode.label}</div>
-                  <div className="text-[10px] text-gray-400">{mode.description}</div>
+                  <div className="font-medium text-xs text-cyan-200">{mode.label}</div>
+                  <div className="text-[10px] text-purple-300">{mode.description}</div>
                 </div>
               ))}
             </div>
@@ -203,21 +203,21 @@ export default function ParengBoyongDemo() {
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-2">
                   <Cpu className="h-3 w-3 text-cyan-400" />
-                  <span className="text-gray-300">CPU</span>
+                  <span className="text-cyan-300">CPU</span>
                 </div>
                 <span className="text-green-400">45%</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-2">
                   <MemoryStick className="h-3 w-3 text-purple-400" />
-                  <span className="text-gray-300">RAM</span>
+                  <span className="text-purple-300">RAM</span>
                 </div>
                 <span className="text-green-400">62GB</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center space-x-2">
                   <HardDrive className="h-3 w-3 text-orange-400" />
-                  <span className="text-gray-300">Storage</span>
+                  <span className="text-orange-300">Storage</span>
                 </div>
                 <span className="text-green-400">180GB</span>
               </div>
@@ -266,14 +266,14 @@ export default function ParengBoyongDemo() {
               <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] rounded-lg p-4 ${
                   msg.type === 'user' 
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg shadow-cyan-500/20' 
+                    ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border border-cyan-400/50 text-cyan-100 shadow-lg shadow-cyan-500/30' 
                     : msg.type === 'system'
-                    ? 'bg-green-500/20 border border-green-400/50 text-green-200 shadow-lg shadow-green-400/20'
-                    : 'bg-gray-800 border border-purple-500/30 text-gray-100 shadow-lg shadow-purple-500/10'
+                    ? 'bg-green-500/20 border border-green-400/50 text-green-200 shadow-lg shadow-green-400/30'
+                    : 'bg-gray-800/50 border border-purple-500/50 text-purple-100 shadow-lg shadow-purple-500/20'
                 }`}>
                   <div className="whitespace-pre-wrap">{msg.content}</div>
                   <div className={`text-xs mt-2 ${
-                    msg.type === 'user' ? 'text-cyan-200' : 'text-gray-400'
+                    msg.type === 'user' ? 'text-cyan-300' : 'text-purple-300'
                   }`}>
                     {new Date(msg.timestamp).toLocaleTimeString()}
                   </div>
@@ -303,7 +303,7 @@ export default function ParengBoyongDemo() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message to Pareng Boyong..."
-                className="flex-1 bg-black border-cyan-500/50 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/50"
+                className="flex-1 bg-black border-cyan-500/50 text-cyan-100 placeholder-purple-400 focus:border-cyan-400 focus:ring-cyan-400/50"
                 disabled={isProcessing}
               />
               <Button 
@@ -314,7 +314,7 @@ export default function ParengBoyongDemo() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <div className="mt-2 text-xs text-gray-400">
+            <div className="mt-2 text-xs text-purple-300">
               Current mode: <strong className="text-cyan-400">{modeOptions.find(m => m.value === selectedMode)?.label}</strong> | 
               Context: <strong className="text-purple-400">{currentContext}</strong>
             </div>
