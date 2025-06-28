@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import multer from "multer";
 import path from "path";
+import fs from "fs/promises";
 import { storage } from "./storage";
 import { FileSystemService } from "./services/fileSystem";
 import { TerminalService } from "./services/terminal";
@@ -10,6 +11,72 @@ import { systemMonitor } from "./services/systemMonitor";
 import { insertFileSchema, insertEnvironmentVariableSchema } from "@shared/schema";
 
 const upload = multer({ dest: 'uploads/' });
+
+// Helper function to sync project files to database
+async function syncProjectToDatabase(sessionId: string, projectPath: string): Promise<void> {
+  const fullPath = path.join('./workspace', projectPath);
+  
+  async function processDirectory(dirPath: string, relativePath: string = ''): Promise<void> {
+    try {
+      const items = await fs.readdir(dirPath, { withFileTypes: true });
+      
+      for (const item of items) {
+        if (item.name.startsWith('.git')) continue; // Skip git files
+        
+        const itemPath = path.join(dirPath, item.name);
+        const relativeItemPath = relativePath ? `${relativePath}/${item.name}` : item.name;
+        
+        if (item.isDirectory()) {
+          await processDirectory(itemPath, relativeItemPath);
+        } else if (item.isFile()) {
+          try {
+            const content = await fs.readFile(itemPath, 'utf-8');
+            const stats = await fs.stat(itemPath);
+            
+            // Get MIME type based on file extension
+            const ext = path.extname(item.name).toLowerCase();
+            const mimeType = getMimeTypeFromExtension(ext);
+            
+            await storage.createFile({
+              sessionId,
+              path: `${projectPath}/${relativeItemPath}`,
+              content,
+              mimeType,
+              size: stats.size,
+            });
+          } catch (err) {
+            // Skip binary files or files that can't be read as text
+            console.warn(`Skipping file ${itemPath}:`, err);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Error processing directory ${dirPath}:`, err);
+    }
+  }
+  
+  await processDirectory(fullPath, '');
+}
+
+function getMimeTypeFromExtension(ext: string): string {
+  const mimeTypes: { [key: string]: string } = {
+    '.py': 'text/x-python',
+    '.js': 'text/javascript',
+    '.ts': 'text/typescript',
+    '.json': 'application/json',
+    '.md': 'text/markdown',
+    '.txt': 'text/plain',
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.yml': 'text/yaml',
+    '.yaml': 'text/yaml',
+    '.toml': 'text/toml',
+    '.sh': 'text/x-shellscript',
+    '.dockerfile': 'text/x-dockerfile',
+  };
+  
+  return mimeTypes[ext] || 'text/plain';
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -209,6 +276,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(processes);
     } catch (error) {
       res.status(500).json({ error: "Failed to get processes" });
+    }
+  });
+
+  // Clone GitHub repository
+  app.post("/api/clone/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { repoUrl, projectName } = req.body;
+      
+      if (!repoUrl) {
+        return res.status(400).json({ error: "Repository URL is required" });
+      }
+
+      const services = sessionServices.get(sessionId);
+      if (!services) {
+        return res.status(404).json({ error: "Session not found" });
+      }
+
+      // Execute git clone
+      const cloneResult = await services.terminal.executeCommand('git', ['clone', repoUrl, projectName || '']);
+      
+      if (cloneResult.exitCode !== 0) {
+        return res.status(500).json({ error: `Git clone failed: ${cloneResult.stderr}` });
+      }
+
+      // Sync files to database
+      await syncProjectToDatabase(sessionId, projectName || repoUrl.split('/').pop()?.replace('.git', '') || 'project');
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully cloned ${repoUrl}`,
+        output: cloneResult.stdout 
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to clone repository" });
     }
   });
 
