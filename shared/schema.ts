@@ -55,7 +55,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertSessionSchema = createInsertSchema(sessions).pick({
   userId: true,
   status: true,
-});
+}).partial();
 
 export const insertFileSchema = createInsertSchema(files).pick({
   sessionId: true,

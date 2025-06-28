@@ -1,60 +1,74 @@
 import { spawn, type ChildProcess } from 'child_process';
-import * as pty from 'node-pty';
 import { storage } from '../storage';
+
+interface TerminalSession {
+  id: string;
+  process: ChildProcess | null;
+  history: string[];
+  currentDir: string;
+}
 
 export class TerminalService {
   private sessionId: string;
-  private terminals: Map<string, pty.IPty> = new Map();
+  private terminals: Map<string, TerminalSession> = new Map();
   private processes: Map<number, ChildProcess> = new Map();
 
   constructor(sessionId: string) {
     this.sessionId = sessionId;
   }
 
-  createTerminal(terminalId: string, workingDir: string = './workspace'): pty.IPty {
-    const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+  createTerminal(terminalId: string, workingDir: string = './workspace'): TerminalSession {
     const sessionWorkDir = `${workingDir}/${this.sessionId}`;
     
-    const terminal = pty.spawn(shell, [], {
-      name: 'xterm-color',
-      cols: 80,
-      rows: 24,
-      cwd: sessionWorkDir,
-      env: {
-        ...process.env,
-        TERM: 'xterm-256color',
-        COLORTERM: 'truecolor',
-      },
-    });
+    const terminal: TerminalSession = {
+      id: terminalId,
+      process: null,
+      history: [],
+      currentDir: sessionWorkDir,
+    };
 
     this.terminals.set(terminalId, terminal);
     return terminal;
   }
 
-  getTerminal(terminalId: string): pty.IPty | undefined {
+  getTerminal(terminalId: string): TerminalSession | undefined {
     return this.terminals.get(terminalId);
   }
 
-  writeToTerminal(terminalId: string, data: string): void {
+  async writeToTerminal(terminalId: string, data: string): Promise<string> {
     const terminal = this.terminals.get(terminalId);
-    if (terminal) {
-      terminal.write(data);
+    if (!terminal) {
+      return 'Terminal not found';
     }
+
+    // Handle command execution
+    const command = data.trim();
+    if (command) {
+      terminal.history.push(command);
+      
+      try {
+        const result = await this.executeCommand(command, [], terminal.currentDir);
+        const output = `$ ${command}\n${result.stdout}${result.stderr ? `\nError: ${result.stderr}` : ''}\n`;
+        return output;
+      } catch (error) {
+        return `$ ${command}\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n`;
+      }
+    }
+    
+    return '';
   }
 
   resizeTerminal(terminalId: string, cols: number, rows: number): void {
-    const terminal = this.terminals.get(terminalId);
-    if (terminal) {
-      terminal.resize(cols, rows);
-    }
+    // For web-based terminal, we don't need to handle resize
+    console.log(`Terminal ${terminalId} resized to ${cols}x${rows}`);
   }
 
   killTerminal(terminalId: string): void {
     const terminal = this.terminals.get(terminalId);
-    if (terminal) {
-      terminal.kill();
-      this.terminals.delete(terminalId);
+    if (terminal && terminal.process) {
+      terminal.process.kill();
     }
+    this.terminals.delete(terminalId);
   }
 
   async executeCommand(command: string, args: string[] = [], workingDir?: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {

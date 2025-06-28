@@ -72,7 +72,8 @@ export class MemStorage implements IStorage {
     const id = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const session: Session = {
       id,
-      ...insertSession,
+      userId: insertSession.userId ?? null,
+      status: insertSession.status ?? 'active',
       createdAt: new Date(),
       lastActivity: new Date(),
     };
@@ -188,7 +189,13 @@ export class MemStorage implements IStorage {
     const id = this.currentProcessId++;
     const process: Process = {
       id,
-      ...insertProcess,
+      sessionId: insertProcess.sessionId,
+      pid: insertProcess.pid,
+      name: insertProcess.name,
+      command: insertProcess.command,
+      status: insertProcess.status,
+      cpuUsage: insertProcess.cpuUsage || 0,
+      memoryUsage: insertProcess.memoryUsage || 0,
       startedAt: new Date(),
     };
     this.processes.set(id, process);

@@ -8,7 +8,8 @@ import SystemMonitor from "@/components/SystemMonitor";
 import BrowserModal from "@/components/BrowserModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Box, 
   Settings, 
@@ -17,7 +18,12 @@ import {
   X, 
   FileCode, 
   Terminal as TerminalIcon, 
-  Globe 
+  Globe,
+  Menu,
+  ChevronDown,
+  ChevronUp,
+  Sidebar,
+  Monitor
 } from "lucide-react";
 import type { Session, FileTreeNode } from "@shared/schema";
 
@@ -35,6 +41,9 @@ export default function SandboxPage() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [isBrowserModalOpen, setIsBrowserModalOpen] = useState(false);
+  const [isFileExplorerOpen, setIsFileExplorerOpen] = useState(false);
+  const [isSystemMonitorOpen, setIsSystemMonitorOpen] = useState(false);
+  const [isTerminalCollapsed, setIsTerminalCollapsed] = useState(false);
 
   // Create session on mount
   const createSessionMutation = useMutation({
@@ -163,83 +172,149 @@ export default function SandboxPage() {
 
   return (
     <div className="h-screen flex flex-col bg-editor-bg text-text-primary">
-      {/* Top Navigation Bar */}
-      <div className="bg-panel-bg border-b border-border-color px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      {/* Mobile-First Top Navigation Bar */}
+      <div className="bg-panel-bg border-b border-border-color px-2 sm:px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <div className="flex items-center space-x-2">
-            <Box className="text-accent-blue text-xl" />
-            <h1 className="text-lg font-semibold">AI Runtime Sandbox</h1>
+            <Box className="text-accent-blue text-lg sm:text-xl" />
+            <h1 className="text-sm sm:text-lg font-semibold hidden xs:block">AI Runtime Sandbox</h1>
+            <h1 className="text-sm font-semibold xs:hidden">Sandbox</h1>
           </div>
-          <div className="flex items-center space-x-1 text-sm text-text-secondary">
-            <Badge className="bg-success-green text-white">Online</Badge>
-            <span>Session: {sessionId?.slice(-8)}</span>
+          <div className="hidden sm:flex items-center space-x-1 text-sm text-text-secondary">
+            <Badge className="bg-success-green text-white text-xs">Online</Badge>
+            <span className="hidden md:inline">Session: {sessionId?.slice(-8)}</span>
           </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="sm" className="text-text-secondary hover:text-text-primary">
+        
+        {/* Mobile Navigation Controls */}
+        <div className="flex items-center space-x-1 sm:space-x-3">
+          {/* Mobile File Explorer Toggle */}
+          <Sheet open={isFileExplorerOpen} onOpenChange={setIsFileExplorerOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="sm:hidden text-text-secondary hover:text-text-primary">
+                <Sidebar className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-80 bg-panel-bg border-border-color p-0">
+              <div className="flex flex-col h-full">
+                <div className="p-3 border-b border-border-color">
+                  <h3 className="text-sm font-medium flex items-center">
+                    <FileCode className="mr-2 text-accent-blue" />
+                    File Explorer
+                  </h3>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  <FileExplorer 
+                    fileTree={fileTree || []} 
+                    onFileOpen={(node) => {
+                      handleFileOpen(node);
+                      setIsFileExplorerOpen(false);
+                    }}
+                    onRefresh={refetchFileTree}
+                  />
+                </div>
+                <div className="p-2 border-t border-border-color">
+                  <Button 
+                    onClick={() => {
+                      handleNewFile();
+                      setIsFileExplorerOpen(false);
+                    }}
+                    className="w-full bg-accent-blue hover:bg-blue-600"
+                    size="sm"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    New File
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          {/* Mobile System Monitor Toggle */}
+          <Sheet open={isSystemMonitorOpen} onOpenChange={setIsSystemMonitorOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="sm:hidden text-text-secondary hover:text-text-primary">
+                <Monitor className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80 bg-panel-bg border-border-color p-0">
+              <SystemMonitor sessionId={sessionId || ''} />
+            </SheetContent>
+          </Sheet>
+
+          {/* Desktop Controls */}
+          <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-text-secondary hover:text-text-primary">
             <Settings className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="text-text-secondary hover:text-text-primary">
+          <Button variant="ghost" size="sm" className="hidden sm:inline-flex text-text-secondary hover:text-text-primary">
             <Maximize className="h-4 w-4" />
           </Button>
-          <Button variant="destructive" size="sm">
-            Disconnect
+          <Button variant="destructive" size="sm" className="text-xs sm:text-sm">
+            <span className="hidden sm:inline">Disconnect</span>
+            <X className="h-4 w-4 sm:hidden" />
           </Button>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area - Responsive Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - File Explorer */}
-        <div className="w-64 bg-panel-bg border-r border-border-color flex flex-col">
-          <div className="p-3 border-b border-border-color">
-            <h3 className="text-sm font-medium flex items-center">
-              <FileCode className="mr-2 text-accent-blue" />
-              File Explorer
-            </h3>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <FileExplorer 
-              fileTree={fileTree || []} 
-              onFileOpen={handleFileOpen}
-              onRefresh={refetchFileTree}
-            />
-          </div>
-          <div className="p-2 border-t border-border-color">
-            <Button 
-              onClick={handleNewFile}
-              className="w-full bg-accent-blue hover:bg-blue-600"
-              size="sm"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              New File
-            </Button>
-          </div>
+        {/* Desktop Left Sidebar - File Explorer */}
+        <div className="hidden sm:flex w-64 lg:w-80 bg-panel-bg border-r border-border-color flex-col">
+          <Collapsible defaultOpen>
+            <CollapsibleTrigger className="w-full">
+              <div className="p-3 border-b border-border-color flex items-center justify-between hover:bg-border-color">
+                <h3 className="text-sm font-medium flex items-center">
+                  <FileCode className="mr-2 text-accent-blue" />
+                  File Explorer
+                </h3>
+                <ChevronDown className="h-4 w-4 text-text-secondary" />
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="flex-1 overflow-y-auto max-h-96">
+                <FileExplorer 
+                  fileTree={fileTree || []} 
+                  onFileOpen={handleFileOpen}
+                  onRefresh={refetchFileTree}
+                />
+              </div>
+              <div className="p-2 border-t border-border-color">
+                <Button 
+                  onClick={handleNewFile}
+                  className="w-full bg-accent-blue hover:bg-blue-600"
+                  size="sm"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  New File
+                </Button>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Main Editor and Terminal Area */}
-        <div className="flex-1 flex flex-col">
-          {/* Tab Bar */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Tab Bar - Responsive */}
           <div className="bg-panel-bg border-b border-border-color flex items-center overflow-x-auto">
-            <div className="flex">
+            <div className="flex min-w-max">
               {tabs.map((tab) => (
                 <div
                   key={tab.id}
-                  className={`flex items-center px-4 py-2 border-r border-border-color cursor-pointer ${
+                  className={`flex items-center px-2 sm:px-4 py-2 border-r border-border-color cursor-pointer whitespace-nowrap ${
                     tab.active 
                       ? 'bg-editor-bg text-text-primary' 
                       : 'hover:bg-border-color text-text-secondary'
                   }`}
                   onClick={() => handleTabClick(tab.id)}
                 >
-                  {tab.type === 'file' && <FileCode className="mr-2 h-4 w-4 text-accent-blue" />}
-                  {tab.type === 'terminal' && <TerminalIcon className="mr-2 h-4 w-4" />}
-                  {tab.type === 'browser' && <Globe className="mr-2 h-4 w-4" />}
-                  <span className="text-sm">{tab.name}</span>
+                  {tab.type === 'file' && <FileCode className="mr-1 sm:mr-2 h-3 sm:h-4 w-3 sm:w-4 text-accent-blue" />}
+                  {tab.type === 'terminal' && <TerminalIcon className="mr-1 sm:mr-2 h-3 sm:h-4 w-3 sm:w-4" />}
+                  {tab.type === 'browser' && <Globe className="mr-1 sm:mr-2 h-3 sm:h-4 w-3 sm:w-4" />}
+                  <span className="text-xs sm:text-sm truncate max-w-24 sm:max-w-none">{tab.name}</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="ml-2 p-0 h-auto text-text-secondary hover:text-text-primary"
+                    className="ml-1 sm:ml-2 p-0 h-auto text-text-secondary hover:text-text-primary"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleCloseTab(tab.id);
@@ -253,31 +328,56 @@ export default function SandboxPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="px-3 py-2 text-text-secondary hover:text-text-primary"
+              className="px-2 sm:px-3 py-2 text-text-secondary hover:text-text-primary"
               onClick={() => setIsBrowserModalOpen(true)}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 sm:h-4 w-3 sm:w-4" />
             </Button>
           </div>
 
-          {/* Content Area */}
-          <div className="flex-1 flex flex-col">
-            {activeTabData?.type === 'file' && (
-              <CodeEditor
-                content={activeTabData.content || ''}
-                language={getLanguageFromPath(activeTabData.path || '')}
-                onSave={(content) => handleFileSave(activeTabData.path || '', content)}
-              />
-            )}
-            
-            {activeTabData?.type === 'terminal' && sessionId && (
-              <Terminal sessionId={sessionId} />
+          {/* Content Area - Responsive */}
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Main Editor/Terminal Content */}
+            <div className={`flex-1 ${isTerminalCollapsed ? 'h-full' : 'h-1/2 sm:h-2/3'}`}>
+              {activeTabData?.type === 'file' && (
+                <CodeEditor
+                  content={activeTabData.content || ''}
+                  language={getLanguageFromPath(activeTabData.path || '')}
+                  onSave={(content) => handleFileSave(activeTabData.path || '', content)}
+                />
+              )}
+              
+              {activeTabData?.type === 'terminal' && sessionId && (
+                <div className="h-full">
+                  <Terminal sessionId={sessionId} />
+                </div>
+              )}
+            </div>
+
+            {/* Collapsible Terminal for File Tabs */}
+            {activeTabData?.type === 'file' && sessionId && (
+              <Collapsible open={!isTerminalCollapsed} onOpenChange={(open) => setIsTerminalCollapsed(!open)}>
+                <CollapsibleTrigger className="w-full">
+                  <div className="bg-panel-bg border-t border-border-color px-4 py-2 flex items-center justify-between hover:bg-border-color">
+                    <h3 className="text-sm font-medium flex items-center">
+                      <TerminalIcon className="mr-2 h-4 w-4 text-success-green" />
+                      Terminal
+                    </h3>
+                    {isTerminalCollapsed ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="h-48 sm:h-64">
+                    <Terminal sessionId={sessionId} />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
           </div>
         </div>
 
-        {/* Right Sidebar - System Monitor */}
-        <div className="w-80 bg-panel-bg border-l border-border-color">
+        {/* Desktop Right Sidebar - System Monitor */}
+        <div className="hidden lg:flex w-80 bg-panel-bg border-l border-border-color">
           <SystemMonitor sessionId={sessionId || ''} />
         </div>
       </div>
