@@ -9,98 +9,14 @@ interface TerminalProps {
 
 export default function Terminal({ sessionId }: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
-  const [xterm, setXterm] = useState<any>(null);
-  const [fitAddon, setFitAddon] = useState<any>(null);
   const [terminalId, setTerminalId] = useState<string | null>(null);
+  const [terminalOutput, setTerminalOutput] = useState<string>('');
+  const [currentInput, setCurrentInput] = useState<string>('');
   
   const { socket, isConnected } = useWebSocket(sessionId);
 
   useEffect(() => {
-    // Load xterm.js
-    const loadXterm = async () => {
-      // Load CSS
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/xterm@5.3.0/css/xterm.css';
-      document.head.appendChild(link);
-
-      // Load JS
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/xterm@5.3.0/lib/xterm.js';
-      script.onload = () => {
-        const fitScript = document.createElement('script');
-        fitScript.src = 'https://unpkg.com/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js';
-        fitScript.onload = () => {
-          setXterm((window as any).Terminal);
-          setFitAddon((window as any).FitAddon);
-        };
-        document.head.appendChild(fitScript);
-      };
-      document.head.appendChild(script);
-    };
-
-    loadXterm();
-  }, []);
-
-  useEffect(() => {
-    if (xterm && fitAddon && terminalRef.current && socket && isConnected) {
-      const terminal = new (xterm as any).Terminal({
-        theme: {
-          background: '#1e1e1e',
-          foreground: '#cccccc',
-          cursor: '#cccccc',
-          black: '#000000',
-          red: '#cd3131',
-          green: '#0dbc79',
-          yellow: '#e5e510',
-          blue: '#2472c8',
-          magenta: '#bc3fbc',
-          cyan: '#11a8cd',
-          white: '#e5e5e5',
-          brightBlack: '#666666',
-          brightRed: '#f14c4c',
-          brightGreen: '#23d18b',
-          brightYellow: '#f5f543',
-          brightBlue: '#3b8eea',
-          brightMagenta: '#d670d6',
-          brightCyan: '#29b8db',
-          brightWhite: '#e5e5e5',
-        },
-        fontFamily: 'JetBrains Mono, Consolas, Monaco, monospace',
-        fontSize: 14,
-        lineHeight: 1.2,
-        cursorBlink: true,
-        allowTransparency: true,
-      });
-
-      const fit = new (fitAddon as any).FitAddon();
-      terminal.loadAddon(fit);
-      terminal.open(terminalRef.current);
-      fit.fit();
-
-      // Handle terminal input
-      terminal.onData((data: string) => {
-        if (socket && terminalId) {
-          socket.send(JSON.stringify({
-            type: 'terminal:input',
-            terminalId,
-            data,
-          }));
-        }
-      });
-
-      // Handle resize
-      terminal.onResize(({ cols, rows }) => {
-        if (socket && terminalId) {
-          socket.send(JSON.stringify({
-            type: 'terminal:resize',
-            terminalId,
-            cols,
-            rows,
-          }));
-        }
-      });
-
+    if (socket && isConnected) {
       // Create terminal on server
       socket.send(JSON.stringify({
         type: 'terminal:create',
@@ -118,13 +34,13 @@ export default function Terminal({ sessionId }: TerminalProps) {
               
             case 'terminal:data':
               if (message.terminalId === terminalId || !terminalId) {
-                terminal.write(message.data);
+                setTerminalOutput(prev => prev + message.data);
               }
               break;
               
             case 'terminal:exit':
               if (message.terminalId === terminalId) {
-                terminal.write('\r\n\x1b[31mProcess exited with code ' + message.exitCode + '\x1b[0m\r\n');
+                setTerminalOutput(prev => prev + `\nProcess exited with code ${message.exitCode}\n`);
               }
               break;
           }
@@ -135,19 +51,22 @@ export default function Terminal({ sessionId }: TerminalProps) {
 
       socket.addEventListener('message', handleMessage);
 
-      // Handle window resize
-      const handleResize = () => {
-        fit.fit();
-      };
-      window.addEventListener('resize', handleResize);
-
       return () => {
         socket.removeEventListener('message', handleMessage);
-        window.removeEventListener('resize', handleResize);
-        terminal.dispose();
       };
     }
-  }, [xterm, fitAddon, socket, isConnected, terminalId]);
+  }, [socket, isConnected, terminalId]);
+
+  const handleInputSubmit = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && socket && terminalId) {
+      socket.send(JSON.stringify({
+        type: 'terminal:input',
+        terminalId,
+        data: currentInput + '\n',
+      }));
+      setCurrentInput('');
+    }
+  };
 
   const handleClear = () => {
     if (terminalRef.current) {
