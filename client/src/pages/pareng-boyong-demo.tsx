@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive } from "lucide-react";
+import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive, Menu, X } from "lucide-react";
 
 export default function ParengBoyongDemo() {
   const [message, setMessage] = useState("");
@@ -20,11 +20,24 @@ export default function ParengBoyongDemo() {
   const [selectedMode, setSelectedMode] = useState("default");
   const [currentContext, setCurrentContext] = useState("pareng-boyong-main");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Close sidebar when window is resized to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && isSidebarOpen) {
+        setIsSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isSidebarOpen]);
 
   const handleSendMessage = () => {
     if (!message.trim() || isProcessing) return;
@@ -93,12 +106,21 @@ export default function ParengBoyongDemo() {
       <div className="bg-gray-900 border-b border-cyan-500/30 p-4 shadow-lg shadow-cyan-500/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
+            {/* Mobile Menu Button */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="md:hidden text-cyan-400 hover:bg-cyan-500/20"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            >
+              {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
             <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-cyan-400/50">
               🇵🇭
             </div>
             <div>
               <h1 className="font-bold text-lg text-cyan-400">Pareng Boyong</h1>
-              <p className="text-sm text-gray-400">Filipino AI AGI Super Agent by InnovateHub PH</p>
+              <p className="text-sm text-gray-400 hidden sm:block">Filipino AI AGI Super Agent by InnovateHub PH</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -113,9 +135,38 @@ export default function ParengBoyongDemo() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        
         {/* Sidebar */}
-        <div className="w-64 bg-gray-900 border-r border-purple-500/30 p-3 overflow-y-auto">
+        <div className={`
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+          md:translate-x-0 
+          fixed md:relative 
+          top-0 left-0 
+          z-50 md:z-auto
+          w-64 h-full md:h-auto
+          bg-gray-900 border-r border-purple-500/30 p-3 overflow-y-auto
+          transition-transform duration-300 ease-in-out
+        `}>
+          {/* Mobile Close Button */}
+          <div className="flex justify-end mb-3 md:hidden">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-gray-400 hover:text-white hover:bg-gray-800"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
           {/* Mode Selection */}
           <div className="mb-4">
             <h3 className="font-medium mb-2 text-sm text-cyan-400">Agent Mode</h3>
@@ -128,7 +179,13 @@ export default function ParengBoyongDemo() {
                       ? 'bg-cyan-500/20 border border-cyan-400/50 shadow-lg shadow-cyan-400/20'
                       : 'hover:bg-gray-800 border border-transparent hover:border-purple-500/30'
                   }`}
-                  onClick={() => setSelectedMode(mode.value)}
+                  onClick={() => {
+                    setSelectedMode(mode.value);
+                    // Close sidebar on mobile when mode is selected
+                    if (window.innerWidth < 768) {
+                      setIsSidebarOpen(false);
+                    }
+                  }}
                 >
                   <div className="font-medium text-xs text-white">{mode.label}</div>
                   <div className="text-[10px] text-gray-400">{mode.description}</div>
