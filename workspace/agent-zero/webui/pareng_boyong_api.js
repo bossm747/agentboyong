@@ -5,7 +5,7 @@
 
 // Configuration for Pareng Boyong
 const PARENG_BOYONG_CONFIG = {
-    backendUrl: window.location.origin, // Use same origin as our runtime sandbox
+    backendUrl: '', // Use relative URLs to work with our Express server
     apiPrefix: '/api',
     sandboxIntegration: true,
     name: 'Pareng Boyong',
@@ -13,41 +13,84 @@ const PARENG_BOYONG_CONFIG = {
     description: 'Filipino AI AGI Super Agent'
 };
 
-// Override the default API calls to use our runtime sandbox
-window.callJsonApi = async function(endpoint, data) {
+console.log('🇵🇭 Pareng Boyong API Integration Loaded!');
+console.log('Runtime Sandbox Backend:', window.location.origin);
+
+// Complete API bridge for Agent Zero webui to work with our runtime sandbox
+window.callJsonApi = async function(endpoint, data = {}) {
     try {
-        // Use our runtime sandbox backend
-        const response = await fetch(`${PARENG_BOYONG_CONFIG.backendUrl}${PARENG_BOYONG_CONFIG.apiPrefix}/pareng-boyong/chat`, {
-            method: 'POST',
+        console.log('API Call:', endpoint, data);
+        
+        // Map Agent Zero endpoints to our runtime sandbox endpoints
+        let url = '';
+        let method = 'GET';
+        let body = null;
+        
+        switch (endpoint) {
+            case '/api/tasks':
+                url = `${PARENG_BOYONG_CONFIG.backendUrl}/api/tasks`;
+                break;
+            case '/api/check_tunnel':
+                url = `${PARENG_BOYONG_CONFIG.backendUrl}/api/check_tunnel`;
+                break;
+            case '/api/chats':
+                url = `${PARENG_BOYONG_CONFIG.backendUrl}/api/chats`;
+                break;
+            default:
+                if (endpoint.startsWith('/api/chat/')) {
+                    const chatId = endpoint.split('/api/chat/')[1];
+                    url = `${PARENG_BOYONG_CONFIG.backendUrl}/api/chat/${chatId}`;
+                } else if (endpoint === '/api/message') {
+                    url = `${PARENG_BOYONG_CONFIG.backendUrl}/api/message`;
+                    method = 'POST';
+                    body = JSON.stringify(data);
+                } else {
+                    // Fallback for unknown endpoints
+                    url = `${PARENG_BOYONG_CONFIG.backendUrl}/api/pareng-boyong/chat`;
+                    method = 'POST';
+                    body = JSON.stringify({
+                        message: `API call: ${endpoint}`,
+                        data: data,
+                        sessionId: 'pareng-boyong-session'
+                    });
+                }
+                break;
+        }
+
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                message: data.message || JSON.stringify(data),
-                sessionId: data.sessionId || 'pareng-boyong-session'
-            }),
+            body: body
         });
 
         if (!response.ok) {
-            console.warn(`API call failed: ${endpoint}`, response.status);
-            // Return a Filipino response for failed API calls
-            return { 
-                message: `Kumusta! I'm Pareng Boyong. The backend is starting up. I'm your Filipino AI AGI Super Agent running in the secure runtime sandbox! 🇵🇭\n\nBackend Status: Initializing\nRuntime Sandbox: Active\nCapabilities: Unlimited`,
-                agent: 'Pareng Boyong',
-                company: 'InnovateHub PH'
-            };
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        return await response.json();
+        const result = await response.json();
+        console.log('API Response:', result);
+        return result;
+        
     } catch (error) {
         console.warn(`API error for ${endpoint}:`, error);
-        // Return a Filipino fallback response
-        return { 
-            message: `Kumusta! I'm Pareng Boyong, your Filipino AI kaibigan! 🇵🇭\n\nI'm currently running in offline mode while connecting to the runtime sandbox backend.\n\nFeatures Available:\n✅ Filipino & English support\n✅ Cultural context understanding\n✅ Runtime sandbox integration\n✅ Unlimited AGI capabilities\n\nWalang hangganan ang aking kakayahan!`,
-            agent: 'Pareng Boyong',
-            company: 'InnovateHub PH',
-            status: 'offline_mode'
-        };
+        // Return meaningful error responses based on endpoint
+        switch (endpoint) {
+            case '/api/tasks':
+                return [];
+            case '/api/check_tunnel':
+                return { status: 'runtime_sandbox', message: 'Using runtime sandbox' };
+            case '/api/chats':
+                return [{ id: 'pareng-boyong-default', name: 'Pareng Boyong Chat' }];
+            default:
+                return { 
+                    error: true,
+                    message: `API ${endpoint} temporarily unavailable`,
+                    agent: 'Pareng Boyong',
+                    runtime_sandbox: true
+                };
+        }
     }
 };
 
