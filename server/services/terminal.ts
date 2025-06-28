@@ -42,16 +42,21 @@ export class TerminalService {
     }
 
     // Handle command execution
-    const command = data.trim();
-    if (command) {
-      terminal.history.push(command);
+    const input = data.trim();
+    if (input) {
+      terminal.history.push(input);
       
       try {
-        const result = await this.executeCommand(command, [], terminal.currentDir);
-        const output = `$ ${command}\n${result.stdout}${result.stderr ? `\nError: ${result.stderr}` : ''}\n`;
+        // Parse command and arguments
+        const args = input.split(' ');
+        const command = args[0];
+        const commandArgs = args.slice(1);
+        
+        const result = await this.executeCommand(command, commandArgs, terminal.currentDir);
+        const output = result.stdout + (result.stderr ? result.stderr : '');
         return output;
       } catch (error) {
-        return `$ ${command}\nError: ${error instanceof Error ? error.message : 'Unknown error'}\n`;
+        return `Error: ${error instanceof Error ? error.message : 'Unknown error'}\n`;
       }
     }
     
@@ -74,10 +79,45 @@ export class TerminalService {
   async executeCommand(command: string, args: string[] = [], workingDir?: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
     const sessionWorkDir = workingDir || `./workspace/${this.sessionId}`;
     
+    // Ensure workspace directory exists
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      await fs.promises.mkdir(sessionWorkDir, { recursive: true });
+    } catch (error) {
+      console.error('Failed to create workspace directory:', error);
+    }
+    
+    // Handle special built-in commands
+    if (command === 'help') {
+      return {
+        stdout: `Available commands:
+  help - Show this help message
+  ls - List files and directories
+  pwd - Show current directory
+  mkdir <dir> - Create directory
+  cat <file> - Display file content
+  echo <text> - Display text
+  python <file> - Run Python script
+  node <file> - Run Node.js script
+  clear - Clear terminal
+  
+Session workspace: ${sessionWorkDir}
+`,
+        stderr: '',
+        exitCode: 0
+      };
+    }
+    
+    if (command === 'clear') {
+      return { stdout: '', stderr: '', exitCode: 0 };
+    }
+    
     return new Promise((resolve, reject) => {
       const child = spawn(command, args, {
         cwd: sessionWorkDir,
-        env: process.env,
+        env: { ...process.env, NODE_ENV: 'development' },
+        shell: true,
       });
 
       let stdout = '';

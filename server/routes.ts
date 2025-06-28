@@ -303,6 +303,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             break;
 
+          case 'terminal:clear':
+            if (terminalId) {
+              ws.send(JSON.stringify({
+                type: 'terminal:cleared',
+                terminalId,
+              }));
+            }
+            break;
+
           case 'system:monitor':
             const sendStats = (stats: any) => {
               if (ws.readyState === WebSocket.OPEN) {
