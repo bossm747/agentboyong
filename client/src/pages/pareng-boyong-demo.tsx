@@ -103,7 +103,7 @@ export default function ParengBoyongDemo() {
   return (
     <div className="h-screen flex flex-col bg-black">
       {/* Header */}
-      <div className="bg-gray-900 border-b border-cyan-500/30 p-4 shadow-lg shadow-cyan-500/20">
+      <div className="bg-black border-b border-cyan-500/30 p-4 shadow-lg shadow-cyan-500/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             {/* Mobile Menu Button */}
@@ -124,11 +124,15 @@ export default function ParengBoyongDemo() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Badge className="bg-green-400/20 text-green-400 border-green-400/50 shadow-lg shadow-green-400/20">
+            <div className="bg-green-400/20 text-green-400 border border-green-400/50 shadow-lg shadow-green-400/20 px-3 py-1 rounded-full text-sm flex items-center">
               <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
               Online
-            </Badge>
-            <Button variant="outline" size="sm" className="border-purple-500/50 text-purple-400 hover:bg-purple-500/20">
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="bg-transparent border border-purple-500/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 shadow-lg shadow-purple-500/20"
+            >
               <Settings className="h-4 w-4" />
             </Button>
           </div>
@@ -152,7 +156,7 @@ export default function ParengBoyongDemo() {
           top-0 left-0 
           z-50 md:z-auto
           w-64 h-full md:h-auto
-          bg-gray-900 border-r border-purple-500/30 p-3 overflow-y-auto
+          bg-black border-r border-purple-500/30 p-3 overflow-y-auto
           transition-transform duration-300 ease-in-out
         `}>
           {/* Mobile Close Button */}
@@ -230,27 +234,27 @@ export default function ParengBoyongDemo() {
           <div>
             <h3 className="font-medium mb-2 text-sm text-green-400">Available Tools</h3>
             <div className="grid grid-cols-2 gap-1">
-              <Button variant="outline" size="sm" className="text-xs border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 h-8">
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 h-8 shadow-lg shadow-cyan-500/20">
                 <Code className="h-3 w-3 mr-1" />
                 Code
               </Button>
-              <Button variant="outline" size="sm" className="text-xs border-purple-500/50 text-purple-400 hover:bg-purple-500/20 h-8">
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-purple-500/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 h-8 shadow-lg shadow-purple-500/20">
                 <Search className="h-3 w-3 mr-1" />
                 Search
               </Button>
-              <Button variant="outline" size="sm" className="text-xs border-green-500/50 text-green-400 hover:bg-green-500/20 h-8">
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-green-500/50 text-green-400 hover:bg-green-500/20 hover:border-green-400 h-8 shadow-lg shadow-green-500/20">
                 <Globe className="h-3 w-3 mr-1" />
                 Web
               </Button>
-              <Button variant="outline" size="sm" className="text-xs border-orange-500/50 text-orange-400 hover:bg-orange-500/20 h-8">
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-orange-500/50 text-orange-400 hover:bg-orange-500/20 hover:border-orange-400 h-8 shadow-lg shadow-orange-500/20">
                 <Terminal className="h-3 w-3 mr-1" />
                 Terminal
               </Button>
-              <Button variant="outline" size="sm" className="text-xs border-pink-500/50 text-pink-400 hover:bg-pink-500/20 h-8">
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-pink-500/50 text-pink-400 hover:bg-pink-500/20 hover:border-pink-400 h-8 shadow-lg shadow-pink-500/20">
                 <FileText className="h-3 w-3 mr-1" />
                 Files
               </Button>
-              <Button variant="outline" size="sm" className="text-xs border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20 h-8">
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20 hover:border-yellow-400 h-8 shadow-lg shadow-yellow-500/20">
                 <Settings className="h-3 w-3 mr-1" />
                 System
               </Button>
@@ -296,7 +300,7 @@ export default function ParengBoyongDemo() {
           </div>
 
           {/* Message Input */}
-          <div className="border-t border-purple-500/30 bg-gray-900 p-4">
+          <div className="border-t border-purple-500/30 bg-black p-4">
             <div className="flex space-x-2">
               <Input
                 value={message}
@@ -309,7 +313,8 @@ export default function ParengBoyongDemo() {
               <Button 
                 onClick={handleSendMessage}
                 disabled={!message.trim() || isProcessing}
-                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 shadow-lg shadow-cyan-500/20"
+                variant="ghost"
+                className="bg-transparent border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 shadow-lg shadow-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-4 w-4" />
               </Button>
