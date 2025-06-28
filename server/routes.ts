@@ -340,7 +340,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Stop monitoring for this connection
       systemMonitor.stopMonitoring();
+      console.log(`WebSocket connection closed for session ${sessionId}`);
     });
+
+    ws.on('error', (error) => {
+      console.error(`WebSocket error for session ${sessionId}:`, error);
+      if (terminalId) {
+        services.terminal.killTerminal(terminalId);
+      }
+    });
+
+    // Send connection confirmation
+    ws.send(JSON.stringify({
+      type: 'connection:established',
+      sessionId,
+      timestamp: Date.now(),
+    }));
   });
 
   return httpServer;

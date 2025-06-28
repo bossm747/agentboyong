@@ -38,6 +38,16 @@ export default function Terminal({ sessionId }: TerminalProps) {
               }
               break;
               
+            case 'terminal:cleared':
+              if (message.terminalId === terminalId) {
+                setTerminalOutput('');
+              }
+              break;
+              
+            case 'connection:established':
+              console.log('WebSocket connection established:', message.sessionId);
+              break;
+              
             case 'terminal:exit':
               if (message.terminalId === terminalId) {
                 setTerminalOutput(prev => prev + `\nProcess exited with code ${message.exitCode}\n`);
