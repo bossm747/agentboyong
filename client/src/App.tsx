@@ -5,12 +5,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SandboxPage from "@/pages/sandbox";
 import AgentZeroPage from "@/pages/agent-zero";
+import ParengBoyongDemo from "@/pages/pareng-boyong-demo";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={SandboxPage} />
+      <Route path="/" component={ParengBoyongDemo} />
+      <Route path="/sandbox" component={SandboxPage} />
       <Route path="/agent-zero" component={AgentZeroPage} />
       <Route component={NotFound} />
     </Switch>
