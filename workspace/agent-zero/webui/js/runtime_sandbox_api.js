@@ -240,9 +240,26 @@ window.fetch = async function(url, options = {}) {
         
         if (fullUrl === '/settings_get' || fullUrl === '/api/settings') {
             return new Response(JSON.stringify({
+                settings: {
+                    sections: {
+                        'agent': {
+                            'name': 'Pareng Boyong',
+                            'type': 'Filipino AI AGI Super Agent',
+                            'runtime_sandbox': true
+                        },
+                        'modes': {
+                            'researcher': true,
+                            'developer': true,
+                            'hacker': true
+                        },
+                        'system': {
+                            'status': 'active',
+                            'backend': 'runtime_sandbox'
+                        }
+                    }
+                },
                 runtime_sandbox: true,
                 agent: 'Pareng Boyong',
-                modes: ['researcher', 'developer', 'hacker'],
                 status: 'active'
             }), { status: 200, headers: { 'Content-Type': 'application/json' } });
         }
