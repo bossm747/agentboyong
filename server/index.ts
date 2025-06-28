@@ -4,63 +4,106 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
-// Special handler for Agent Zero settings endpoint that sends "null" as body
+// Special route that bypasses JSON parsing - Agent Zero sends "null" as body
 app.post('/settings_get', (req: Request, res: Response) => {
-  // Agent Zero sends "null" as string body, we handle it gracefully
+  // Agent Zero sends "null" as body - we provide proper settings structure
   res.json({
     settings: {
       sections: [
         {
-          id: 'agent',
+          id: 'chat_model',
           tab: 'agent',
-          title: 'Agent Configuration',
-          description: 'Configure your AI agent settings for runtime sandbox',
+          title: 'Chat Model',
+          description: 'Selection and settings for main chat model used by Pareng Boyong',
           fields: [
             {
+              id: 'chat_model_provider',
+              title: 'Chat model provider',
+              description: 'Select provider for main chat model used by Pareng Boyong',
+              type: 'select',
+              value: 'runtime_sandbox',
+              options: [
+                { value: 'runtime_sandbox', label: 'Runtime Sandbox' },
+                { value: 'openai', label: 'OpenAI' }
+              ]
+            },
+            {
+              id: 'chat_model_name', 
+              title: 'Chat model name',
+              description: 'Exact name of model from selected provider',
               type: 'text',
-              name: 'agent_name',
-              title: 'Agent Name',
-              value: 'Agent Zero (Runtime Sandbox)',
-              description: 'The name of your AI agent'
+              value: 'pareng-boyong-runtime'
             },
             {
-              type: 'textarea',
-              name: 'system_message',
-              title: 'System Message',
-              value: 'You are Agent Zero, a general-purpose AI assistant running in a secure runtime sandbox. You can execute code, manage files, and help with various tasks.',
-              description: 'System message for the agent'
+              id: 'chat_model_ctx_length',
+              title: 'Chat model context length',
+              description: 'Maximum number of tokens in the context window for LLM',
+              type: 'number',
+              value: 32768
             },
             {
-              type: 'checkbox',
-              name: 'runtime_sandbox_enabled',
-              title: 'Runtime Sandbox',
-              value: true,
-              description: 'Use runtime sandbox instead of Docker Desktop'
+              id: 'chat_model_vision',
+              title: 'Supports Vision',
+              description: 'Models capable of Vision can natively see image attachments',
+              type: 'switch',
+              value: true
             }
           ]
         },
         {
-          id: 'models',
-          tab: 'models', 
-          title: 'Model Configuration',
-          description: 'AI model settings for runtime sandbox',
+          id: 'agent_prompts',
+          tab: 'agent', 
+          title: 'Agent Configuration',
+          description: 'Settings for Pareng Boyong agent behavior',
           fields: [
             {
+              id: 'agent_prompts_subdir',
+              title: 'Agent prompts subdirectory',
+              description: 'Subdirectory for agent prompts in the prompts folder',
               type: 'select',
-              name: 'chat_model',
-              title: 'Chat Model',
-              value: 'runtime-sandbox',
+              value: 'default',
               options: [
-                { value: 'runtime-sandbox', title: 'Runtime Sandbox Model' }
-              ],
-              description: 'Model used for chat completions'
+                { value: 'default', label: 'Default' },
+                { value: 'developer', label: 'Developer' },
+                { value: 'researcher', label: 'Researcher' },
+                { value: 'hacker', label: 'Hacker' }
+              ]
             },
             {
+              id: 'agent_memory_subdir',
+              title: 'Agent memory subdirectory', 
+              description: 'Subdirectory for agent memory storage',
               type: 'text',
-              name: 'api_key',
-              title: 'API Key',
-              value: 'runtime-sandbox-key',
-              description: 'API key for the model (handled by runtime sandbox)'
+              value: 'default'
+            },
+            {
+              id: 'agent_knowledge_subdir',
+              title: 'Agent knowledge subdirectory',
+              description: 'Subdirectory for agent knowledge base',
+              type: 'text', 
+              value: 'default'
+            }
+          ]
+        },
+        {
+          id: 'api_keys',
+          tab: 'external',
+          title: 'API Keys',
+          description: 'API keys for external services',
+          fields: [
+            {
+              id: 'openai_api_key',
+              title: 'OpenAI API Key',
+              description: 'API key for OpenAI services',
+              type: 'password',
+              value: ''
+            },
+            {
+              id: 'anthropic_api_key',
+              title: 'Anthropic API Key', 
+              description: 'API key for Anthropic Claude',
+              type: 'password',
+              value: ''
             }
           ]
         }
