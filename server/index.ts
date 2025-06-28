@@ -3,6 +3,72 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Special handler for Agent Zero settings endpoint that sends "null" as body
+app.post('/settings_get', (req: Request, res: Response) => {
+  // Agent Zero sends "null" as string body, we handle it gracefully
+  res.json({
+    settings: {
+      sections: [
+        {
+          id: 'agent',
+          tab: 'agent',
+          title: 'Agent Configuration',
+          description: 'Configure your AI agent settings for runtime sandbox',
+          fields: [
+            {
+              type: 'text',
+              name: 'agent_name',
+              title: 'Agent Name',
+              value: 'Agent Zero (Runtime Sandbox)',
+              description: 'The name of your AI agent'
+            },
+            {
+              type: 'textarea',
+              name: 'system_message',
+              title: 'System Message',
+              value: 'You are Agent Zero, a general-purpose AI assistant running in a secure runtime sandbox. You can execute code, manage files, and help with various tasks.',
+              description: 'System message for the agent'
+            },
+            {
+              type: 'checkbox',
+              name: 'runtime_sandbox_enabled',
+              title: 'Runtime Sandbox',
+              value: true,
+              description: 'Use runtime sandbox instead of Docker Desktop'
+            }
+          ]
+        },
+        {
+          id: 'models',
+          tab: 'models', 
+          title: 'Model Configuration',
+          description: 'AI model settings for runtime sandbox',
+          fields: [
+            {
+              type: 'select',
+              name: 'chat_model',
+              title: 'Chat Model',
+              value: 'runtime-sandbox',
+              options: [
+                { value: 'runtime-sandbox', title: 'Runtime Sandbox Model' }
+              ],
+              description: 'Model used for chat completions'
+            },
+            {
+              type: 'text',
+              name: 'api_key',
+              title: 'API Key',
+              value: 'runtime-sandbox-key',
+              description: 'API key for the model (handled by runtime sandbox)'
+            }
+          ]
+        }
+      ]
+    }
+  });
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

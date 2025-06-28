@@ -630,8 +630,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Agent Zero settings endpoint - original format
-  app.post('/settings_get', (req: Request, res: Response) => {
+  // Agent Zero settings endpoint - bypass JSON parsing for null body
+  app.post('/settings_get', express.text({ type: 'application/json' }), (req: Request, res: Response) => {
+    // Agent Zero sends "null" as string body, we handle it gracefully
     res.json({
       settings: {
         sections: [
