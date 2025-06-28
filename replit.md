@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a comprehensive AI Runtime Sandbox that now hosts Agent Zero as the primary AGI interface. The system provides a secure, isolated execution environment where Agent Zero runs with full capabilities as a true super agent. Agent Zero has complete freedom within the runtime sandbox while maintaining host system security. The architecture combines our runtime sandbox infrastructure with Agent Zero's powerful AGI capabilities, creating an unlimited potential AI assistant.
+This is a comprehensive AI Runtime Sandbox that now hosts **Pareng Boyong** - a Filipino AI AGI Super Agent developed by InnovateHub PH. The system provides a secure, isolated execution environment where Pareng Boyong runs with full capabilities as a true super agent. Pareng Boyong has complete freedom within the runtime sandbox while maintaining host system security. The architecture combines our runtime sandbox infrastructure with culturally-aware Filipino AI capabilities, creating an unlimited potential AI assistant that understands both English and Filipino contexts.
 
 ## System Architecture
 
@@ -29,12 +29,14 @@ This is a comprehensive AI Runtime Sandbox that now hosts Agent Zero as the prim
 
 ## Key Components
 
-### Agent Zero AGI Interface
-- **Primary User Interface**: Agent Zero runs as the main AGI super agent interface
+### Pareng Boyong - Filipino AGI Interface
+- **Primary User Interface**: Pareng Boyong runs as the main Filipino AI AGI super agent interface
+- **Cultural Awareness**: Built with Filipino culture, language, and business context understanding
 - **Complete Freedom**: Full execution capabilities within secure runtime sandbox
 - **Docker Replacement**: Eliminated Docker Desktop dependency, using runtime sandbox instead
-- **Unlimited Potential**: No artificial restrictions on Agent Zero's capabilities
+- **Unlimited Potential**: No artificial restrictions on Pareng Boyong's capabilities
 - **Persistent Memory**: Database-backed long-term memory across sessions
+- **Bilingual Support**: Fluent in both English and Filipino languages
 
 ### Model Context Protocol (MCP) Server
 - **Standardized AI Integration**: Implements MCP specification for tool-based AI interactions
@@ -127,12 +129,16 @@ Each session is isolated with its own workspace directory and associated service
 ✓ Successfully cloned Agent Zero open source project
 ✓ Completely eliminated Docker Desktop dependency 
 ✓ Created runtime sandbox adapters for Agent Zero
-✓ Agent Zero now has secure house (runtime sandbox) with unlimited capabilities
-✓ Integrated database persistence for Agent Zero sessions
-✓ Agent Zero ready to run as main AGI super agent interface
+✓ **REBRANDED**: Agent Zero → Pareng Boyong (Filipino AI AGI Super Agent by InnovateHub PH)
+✓ Added Filipino cultural context and bilingual capabilities
+✓ Integrated InnovateHub PH branding and logo
+✓ Created Filipino-themed startup scripts and documentation
+✓ Pareng Boyong now has secure house (runtime sandbox) with unlimited capabilities
+✓ Integrated database persistence for Pareng Boyong sessions
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-Architecture: Agent Zero as primary AGI interface running in secure runtime sandbox.
-Goal: Agent Zero with unlimited potential in secure isolated environment.
+Architecture: Pareng Boyong (Filipino AI AGI) as primary interface running in secure runtime sandbox.
+Goal: Pareng Boyong with unlimited potential in secure isolated environment.
+Branding: Filipino AI AGI Super Agent by InnovateHub PH with cultural awareness and bilingual capabilities.

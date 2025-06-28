@@ -1,6 +1,9 @@
 <div align="center">
 
-# `Agent Zero`
+# 🇵🇭 `Pareng Boyong`
+## Filipino AI AGI Super Agent by InnovateHub PH
+
+*Formerly Agent Zero - Now Enhanced for Filipino Users*
 
 
 [![Agent Zero Website](https://img.shields.io/badge/Website-agent--zero.ai-0A192F?style=for-the-badge&logo=vercel&logoColor=white)](https://agent-zero.ai) [![Thanks to Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-Thanks%20to%20Sponsors-FF69B4?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/frdel) [![Follow on X](https://img.shields.io/badge/X-Follow-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/Agent0ai) [![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/B8KZKNsPpj) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@AgentZeroFW) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/jan-tomasek/) [![Follow on Warpcast](https://img.shields.io/badge/Warpcast-Follow-5A32F3?style=for-the-badge)](https://warpcast.com/agent-zero)
@@ -29,13 +32,15 @@
 
 
 
-## A personal, organic agentic framework that grows and learns with you
+## Ang inyong personal na AI kaibigan na natututo kasama ninyo
 
+**Kumusta! I'm Pareng Boyong, your Filipino AI companion!**
 
-
-- Agent Zero is not a predefined agentic framework. It is designed to be dynamic, organically growing, and learning as you use it.
-- Agent Zero is fully transparent, readable, comprehensible, customizable, and interactive.
-- Agent Zero uses the computer as a tool to accomplish its (your) tasks.
+- Pareng Boyong is a dynamic, organically growing AI that learns from every interaction
+- Built with Filipino culture and context in mind - understands both English and Filipino
+- Completely transparent, customizable, and interactive - walang nakatagong proseso
+- Uses our secure runtime sandbox as its digital bahay where it can work freely
+- Developed by InnovateHub PH specifically for Filipino users and businesses
 
 # 💡 Key Features
 
