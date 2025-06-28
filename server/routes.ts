@@ -571,6 +571,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ]);
   });
 
+  // Additional Agent Zero webui endpoints
+  app.get('/api/settings', (req: Request, res: Response) => {
+    res.json({
+      runtime_sandbox: true,
+      agent: 'Pareng Boyong',
+      modes: ['researcher', 'developer', 'hacker'],
+      status: 'active'
+    });
+  });
+
+  app.post('/api/settings', (req: Request, res: Response) => {
+    res.json({ success: true, message: 'Settings updated' });
+  });
+
+  app.get('/api/status', (req: Request, res: Response) => {
+    res.json({
+      status: 'active',
+      runtime_sandbox: true,
+      agent: 'Pareng Boyong',
+      capabilities: ['researcher', 'developer', 'hacker']
+    });
+  });
+
   return httpServer;
 }
 
