@@ -137,7 +137,7 @@ export default function ParengBoyongDemo() {
             </div>
           </div>
 
-          <Separator className="my-4" />
+          <Separator className="my-3 bg-purple-500/30" />
 
           {/* System Status */}
           <div className="mb-4">
@@ -167,7 +167,7 @@ export default function ParengBoyongDemo() {
             </div>
           </div>
 
-          <Separator className="my-4" />
+          <Separator className="my-3 bg-purple-500/30" />
 
           {/* Available Tools */}
           <div>
