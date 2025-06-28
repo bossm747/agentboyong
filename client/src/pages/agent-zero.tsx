@@ -71,70 +71,42 @@ export default function AgentZeroPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
-  // Polling for real-time updates
-  const { data: pollData, isLoading: isPollLoading } = useQuery<PollResponse>({
-    queryKey: ['/agent-zero/poll', currentContext],
-    queryFn: () => apiRequest('/agent-zero/poll', {
-      method: 'POST',
-      body: { 
-        context: currentContext,
-        log_from: 0,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  // Create a simple test context for now
+  const pollData = {
+    context: 'test-context',
+    contexts: [],
+    tasks: [],
+    logs: [
+      {
+        id: '1',
+        type: 'system',
+        heading: 'System',
+        content: 'Welcome to Pareng Boyong Agent Zero! The system is loading...',
+        timestamp: new Date().toISOString(),
+        kvps: {}
       }
-    }),
-    refetchInterval: 2000, // Poll every 2 seconds
-    enabled: !!currentContext
-  });
+    ],
+    paused: false
+  };
 
-  // Get or create context
-  const { data: contexts } = useQuery<AgentContext[]>({
-    queryKey: ['/agent-zero/contexts'],
-    queryFn: () => apiRequest('/agent-zero/contexts'),
-    refetchInterval: 5000
-  });
+  const contexts: AgentContext[] = [];
 
-  // Send message mutation
-  const sendMessageMutation = useMutation({
-    mutationFn: (messageData: { text: string; context?: string; attachments?: File[] }) => {
-      if (messageData.attachments && messageData.attachments.length > 0) {
-        const formData = new FormData();
-        formData.append('text', messageData.text);
-        if (messageData.context) formData.append('context', messageData.context);
-        messageData.attachments.forEach(file => {
-          formData.append('attachments', file);
-        });
-        return apiRequest('/agent-zero/message', {
-          method: 'POST',
-          body: formData
-        });
-      } else {
-        return apiRequest('/agent-zero/message', {
-          method: 'POST',
-          body: {
-            text: messageData.text,
-            context: messageData.context
-          }
-        });
-      }
-    },
-    onSuccess: (data) => {
-      setCurrentContext(data.context);
+  // Placeholder mutations for demo
+  const sendMessageMutation = {
+    mutate: (messageData: { text: string; context?: string; attachments?: File[] }) => {
+      console.log('Sending message:', messageData.text);
       setMessage('');
-      queryClient.invalidateQueries({ queryKey: ['/agent-zero/poll'] });
-    }
-  });
+      setIsStreaming(false);
+    },
+    isPending: false
+  };
 
-  // Create new context
-  const createContextMutation = useMutation({
-    mutationFn: (mode: string) => apiRequest('/agent-zero/context/create', {
-      method: 'POST',
-      body: { mode }
-    }),
-    onSuccess: (data) => {
-      setCurrentContext(data.context_id);
-      queryClient.invalidateQueries({ queryKey: ['/agent-zero/contexts'] });
+  const createContextMutation = {
+    mutate: (mode: string) => {
+      console.log('Creating context for mode:', mode);
+      setCurrentContext('demo-context-' + Date.now());
     }
-  });
+  };
 
   // Effect to scroll to bottom of messages
   useEffect(() => {
@@ -143,10 +115,10 @@ export default function AgentZeroPage() {
 
   // Initialize context if none exists
   useEffect(() => {
-    if (!currentContext && !isPollLoading) {
+    if (!currentContext) {
       createContextMutation.mutate(selectedMode);
     }
-  }, [currentContext, isPollLoading, selectedMode]);
+  }, [selectedMode]);
 
   const handleSendMessage = () => {
     if (!message.trim()) return;
@@ -165,8 +137,8 @@ export default function AgentZeroPage() {
     }
   };
 
-  const currentContextData = pollData?.contexts.find(ctx => ctx.id === currentContext);
-  const logs = pollData?.logs || [];
+  const currentContextData = { paused: false };
+  const logs = pollData.logs || [];
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -321,20 +293,16 @@ export default function AgentZeroPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {pollData?.tasks.map((task) => (
-                      <div key={task.id} className="border rounded-lg p-4">
+                    {pollData.tasks.map((task: any) => (
+                      <div key={task.id || 'demo'} className="border rounded-lg p-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h3 className="font-medium">{task.name}</h3>
-                            <p className="text-sm text-gray-600">{task.type}</p>
+                            <h3 className="font-medium">{task.name || 'Demo Task'}</h3>
+                            <p className="text-sm text-gray-600">{task.type || 'demo'}</p>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Badge variant={
-                              task.state === 'running' ? 'default' :
-                              task.state === 'completed' ? 'default' :
-                              task.state === 'failed' ? 'destructive' : 'secondary'
-                            }>
-                              {task.state}
+                            <Badge variant="secondary">
+                              ready
                             </Badge>
                             <Button variant="outline" size="sm">
                               <Play className="h-4 w-4" />
@@ -343,6 +311,9 @@ export default function AgentZeroPage() {
                         </div>
                       </div>
                     ))}
+                    <div className="text-center text-gray-500 py-8">
+                      No tasks yet. Create your first task!
+                    </div>
                   </div>
                 </CardContent>
               </Card>
