@@ -507,6 +507,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // CSRF token endpoint for webui compatibility
+  app.get('/api/csrf', (req: Request, res: Response) => {
+    res.json({ token: 'pareng-boyong-csrf-token' });
+  });
+
   // Serve Pareng Boyong WebUI static files
   app.use('/pareng-boyong', express.static(path.join(process.cwd(), 'workspace/agent-zero/webui')));
   
