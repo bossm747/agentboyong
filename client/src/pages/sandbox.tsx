@@ -205,7 +205,7 @@ export default function SandboxPage() {
                 </div>
                 <div className="flex-1 overflow-y-auto">
                   <FileExplorer 
-                    fileTree={fileTree || []} 
+                    fileTree={(fileTree as any) || []} 
                     onFileOpen={(node) => {
                       handleFileOpen(node);
                       setIsFileExplorerOpen(false);
@@ -273,7 +273,7 @@ export default function SandboxPage() {
             <CollapsibleContent>
               <div className="flex-1 overflow-y-auto max-h-96">
                 <FileExplorer 
-                  fileTree={fileTree || []} 
+                  fileTree={(fileTree as any) || []} 
                   onFileOpen={handleFileOpen}
                   onRefresh={refetchFileTree}
                 />

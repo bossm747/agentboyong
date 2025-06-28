@@ -44,7 +44,7 @@ export default function Terminal({ sessionId }: TerminalProps) {
 
   useEffect(() => {
     if (xterm && fitAddon && terminalRef.current && socket && isConnected) {
-      const terminal = new xterm({
+      const terminal = new (xterm as any).Terminal({
         theme: {
           background: '#1e1e1e',
           foreground: '#cccccc',
@@ -73,7 +73,7 @@ export default function Terminal({ sessionId }: TerminalProps) {
         allowTransparency: true,
       });
 
-      const fit = new fitAddon.FitAddon();
+      const fit = new (fitAddon as any).FitAddon();
       terminal.loadAddon(fit);
       terminal.open(terminalRef.current);
       fit.fit();

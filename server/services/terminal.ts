@@ -140,15 +140,17 @@ export class TerminalService {
 
   cleanup(): void {
     // Kill all terminals
-    for (const [terminalId, terminal] of this.terminals) {
-      terminal.kill();
-    }
+    Array.from(this.terminals.entries()).forEach(([terminalId, terminal]) => {
+      if (terminal.process) {
+        terminal.process.kill();
+      }
+    });
     this.terminals.clear();
 
     // Kill all processes
-    for (const [pid, process] of this.processes) {
+    Array.from(this.processes.entries()).forEach(([pid, process]) => {
       process.kill();
-    }
+    });
     this.processes.clear();
   }
 }

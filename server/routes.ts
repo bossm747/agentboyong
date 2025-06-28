@@ -260,35 +260,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
             terminalId = `terminal_${Date.now()}`;
             const terminal = services.terminal.createTerminal(terminalId);
             
-            terminal.onData((data: string) => {
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'terminal:data',
-                  terminalId,
-                  data,
-                }));
-              }
-            });
-
-            terminal.onExit((exitCode: number) => {
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'terminal:exit',
-                  terminalId,
-                  exitCode,
-                }));
-              }
-            });
-
             ws.send(JSON.stringify({
               type: 'terminal:created',
               terminalId,
+            }));
+
+            // Send welcome message
+            ws.send(JSON.stringify({
+              type: 'terminal:data',
+              terminalId,
+              data: `Welcome to AI Runtime Sandbox Terminal\nSession: ${sessionId}\nType 'help' for available commands\n\n$ `,
             }));
             break;
 
           case 'terminal:input':
             if (terminalId && message.data) {
-              services.terminal.writeToTerminal(terminalId, message.data);
+              services.terminal.writeToTerminal(terminalId, message.data)
+                .then(output => {
+                  if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                      type: 'terminal:data',
+                      terminalId,
+                      data: output + '$ ',
+                    }));
+                  }
+                })
+                .catch(error => {
+                  if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                      type: 'terminal:data',
+                      terminalId,
+                      data: `Error: ${error instanceof Error ? error.message : 'Unknown error'}\n$ `,
+                    }));
+                  }
+                });
             }
             break;
 
