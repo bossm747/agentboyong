@@ -69,11 +69,12 @@ export default function Terminal({ sessionId }: TerminalProps) {
   };
 
   const handleClear = () => {
-    if (terminalRef.current) {
-      const terminal = (terminalRef.current as any).terminal;
-      if (terminal) {
-        terminal.clear();
-      }
+    setTerminalOutput('');
+    if (socket && terminalId) {
+      socket.send(JSON.stringify({
+        type: 'terminal:clear',
+        terminalId,
+      }));
     }
   };
 
@@ -138,12 +139,26 @@ export default function Terminal({ sessionId }: TerminalProps) {
       </div>
 
       {/* Terminal Content */}
-      <div className="flex-1 p-2">
-        <div 
-          ref={terminalRef} 
-          className="h-full w-full"
-          style={{ background: 'var(--editor-bg)' }}
-        />
+      <div className="flex-1 p-2 bg-black text-green-400 font-mono text-sm overflow-hidden">
+        <div className="h-full flex flex-col">
+          <div className="flex-1 overflow-y-auto p-2">
+            <pre className="whitespace-pre-wrap">
+              {terminalOutput || 'Terminal ready. Type commands and press Enter...\n'}
+            </pre>
+          </div>
+          <div className="flex items-center p-2 border-t border-gray-700">
+            <span className="text-green-400">$ </span>
+            <input
+              type="text"
+              value={currentInput}
+              onChange={(e) => setCurrentInput(e.target.value)}
+              onKeyDown={handleInputSubmit}
+              className="flex-1 bg-transparent text-green-400 outline-none ml-1"
+              placeholder="Enter command..."
+              disabled={!isConnected || !terminalId}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
