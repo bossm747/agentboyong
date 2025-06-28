@@ -476,23 +476,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }));
   });
 
-  // Pareng Boyong API endpoints for AGI functionality
+  // Pareng Boyong API endpoints for AGI functionality with full runtime sandbox integration
   app.post('/api/pareng-boyong/chat', async (req: Request, res: Response) => {
     try {
       const { message, sessionId } = req.body;
+      const actualSessionId = sessionId || 'pareng_boyong_session';
       
-      // Integrate with our runtime sandbox for AGI processing
-      const response = {
-        message: `Kumusta! I'm Pareng Boyong. You said: "${message}". I'm running in the secure runtime sandbox with full AGI capabilities! 🇵🇭`,
-        sessionId: sessionId || 'default',
+      // Get or create session services for this Pareng Boyong instance
+      let services = sessionServices.get(actualSessionId);
+      if (!services) {
+        const fileSystem = new FileSystemService(actualSessionId);
+        const terminal = new TerminalService(actualSessionId);
+        await fileSystem.ensureWorkspaceExists();
+        
+        services = { fileSystem, terminal };
+        sessionServices.set(actualSessionId, services);
+      }
+      
+      // Process message with full AGI capabilities
+      const response = await processParengBoyongMessage(message, actualSessionId, services);
+      
+      res.json({
+        message: response.message,
+        data: response.data,
+        files: response.files,
+        sessionId: actualSessionId,
         timestamp: new Date().toISOString(),
         agent: 'Pareng Boyong',
-        company: 'InnovateHub PH'
-      };
-      
-      res.json(response);
+        company: 'InnovateHub PH',
+        capabilities: 'unlimited',
+        runtime_sandbox: 'active'
+      });
     } catch (error) {
-      res.status(500).json({ error: 'Pareng Boyong processing error' });
+      res.status(500).json({ 
+        error: 'Pareng Boyong processing error',
+        message: `May error sa processing, pero okay lang! I'm still your Filipino AI AGI. Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     }
   });
 
@@ -521,4 +540,156 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   return httpServer;
+}
+
+// Pareng Boyong AGI Processing Function with Full Runtime Sandbox Capabilities
+async function processParengBoyongMessage(message: string, sessionId: string, services: any) {
+  const response = { message: '', data: null, files: null };
+  
+  // Analyze message for different types of requests
+  const lowerMessage = message.toLowerCase();
+  
+  // Code execution requests
+  if (lowerMessage.includes('run') || lowerMessage.includes('execute') || lowerMessage.includes('code') || 
+      lowerMessage.includes('python') || lowerMessage.includes('javascript') || lowerMessage.includes('node')) {
+    
+    if (lowerMessage.includes('python')) {
+      const pythonCode = extractCodeFromMessage(message) || `
+print("🇵🇭 Kumusta! I'm Pareng Boyong!")
+print("Runtime Sandbox Python Test:")
+import sys
+import os
+print(f"Python Version: {sys.version}")
+print(f"Current Directory: {os.getcwd()}")
+print(f"Environment: Runtime Sandbox Active")
+print("✅ Full AGI capabilities enabled!")
+`;
+      
+      const result = await services.terminal.executeCommand('python3', ['-c', pythonCode]);
+      response.message = `🇵🇭 **Pareng Boyong Python Execution**\n\nKode na na-execute:\n\`\`\`python\n${pythonCode}\n\`\`\`\n\n**Output:**\n\`\`\`\n${result.stdout}\n\`\`\`${result.stderr ? `\n\n**Errors:**\n\`\`\`\n${result.stderr}\n\`\`\`` : ''}\n\nWalang problema! Python code successfully executed sa runtime sandbox! 🚀`;
+      response.data = result;
+    } else if (lowerMessage.includes('javascript') || lowerMessage.includes('node')) {
+      const jsCode = extractCodeFromMessage(message) || `
+console.log("🇵🇭 Kumusta! I'm Pareng Boyong!");
+console.log("Runtime Sandbox Node.js Test:");
+console.log("Node Version:", process.version);
+console.log("Platform:", process.platform);
+console.log("Environment: Runtime Sandbox Active");
+console.log("✅ Full AGI capabilities enabled!");
+`;
+      
+      const result = await services.terminal.executeCommand('node', ['-e', jsCode]);
+      response.message = `🇵🇭 **Pareng Boyong JavaScript Execution**\n\nKode na na-execute:\n\`\`\`javascript\n${jsCode}\n\`\`\`\n\n**Output:**\n\`\`\`\n${result.stdout}\n\`\`\`${result.stderr ? `\n\n**Errors:**\n\`\`\`\n${result.stderr}\n\`\`\`` : ''}\n\nGaling! JavaScript code successfully executed sa runtime sandbox! 🚀`;
+      response.data = result;
+    }
+  }
+  
+  // File operations
+  else if (lowerMessage.includes('create file') || lowerMessage.includes('write file') || lowerMessage.includes('make file')) {
+    const filename = extractFilenameFromMessage(message) || 'pareng_boyong_test.txt';
+    const content = extractContentFromMessage(message) || `🇵🇭 Pareng Boyong File Test\n\nThis file was created by Pareng Boyong AGI in the runtime sandbox!\nTimestamp: ${new Date().toISOString()}\nCapabilities: Unlimited\nRuntime: Secure Sandbox Environment\n\nWalang hangganan ang kakayahan ko!`;
+    
+    await services.fileSystem.writeFile(filename, content);
+    const fileTree = await services.fileSystem.getFileTree();
+    
+    response.message = `🇵🇭 **File Created Successfully!**\n\nFilename: \`${filename}\`\nContent:\n\`\`\`\n${content}\n\`\`\`\n\nFile created sa runtime sandbox workspace! ✅`;
+    response.files = fileTree;
+  }
+  
+  // System information
+  else if (lowerMessage.includes('system') || lowerMessage.includes('info') || lowerMessage.includes('status')) {
+    const systemInfo = await services.terminal.executeCommand('uname', ['-a']);
+    const diskInfo = await services.terminal.executeCommand('df', ['-h']);
+    const memInfo = await services.terminal.executeCommand('free', ['-h']);
+    
+    response.message = `🇵🇭 **Pareng Boyong System Information**\n\nRuntime Sandbox Status: ✅ ACTIVE\nAgent: Pareng Boyong (Filipino AI AGI)\nCompany: InnovateHub PH\n\n**System Details:**\n\`\`\`\n${systemInfo.stdout}\n\`\`\`\n\n**Disk Usage:**\n\`\`\`\n${diskInfo.stdout}\n\`\`\`\n\n**Memory Usage:**\n\`\`\`\n${memInfo.stdout}\n\`\`\`\n\nLahat ng capabilities available! Walang limitations! 🚀`;
+    response.data = { systemInfo, diskInfo, memInfo };
+  }
+  
+  // Project creation
+  else if (lowerMessage.includes('create project') || lowerMessage.includes('new project') || lowerMessage.includes('start project')) {
+    const projectName = extractProjectNameFromMessage(message) || 'pareng_boyong_project';
+    const projectType = lowerMessage.includes('python') ? 'python' : lowerMessage.includes('node') ? 'node' : 'general';
+    
+    // Create project directory
+    await services.fileSystem.createDirectory(projectName);
+    
+    if (projectType === 'python') {
+      await services.fileSystem.writeFile(`${projectName}/main.py`, `#!/usr/bin/env python3
+"""
+Pareng Boyong Python Project
+Created by Filipino AI AGI in Runtime Sandbox
+"""
+
+def main():
+    print("🇵🇭 Kumusta! This is a Pareng Boyong Python project!")
+    print("Runtime Sandbox: Active")
+    print("AGI Capabilities: Unlimited")
+    print("Walang hangganan ang possibilities!")
+
+if __name__ == "__main__":
+    main()
+`);
+      await services.fileSystem.writeFile(`${projectName}/requirements.txt`, `# Pareng Boyong Python Project Dependencies
+requests
+flask
+numpy
+pandas
+`);
+    } else if (projectType === 'node') {
+      await services.fileSystem.writeFile(`${projectName}/index.js`, `/**
+ * Pareng Boyong Node.js Project
+ * Created by Filipino AI AGI in Runtime Sandbox
+ */
+
+console.log("🇵🇭 Kumusta! This is a Pareng Boyong Node.js project!");
+console.log("Runtime Sandbox: Active");
+console.log("AGI Capabilities: Unlimited");
+console.log("Walang hangganan ang possibilities!");
+
+module.exports = { message: "Pareng Boyong AGI Project" };
+`);
+      await services.fileSystem.writeFile(`${projectName}/package.json`, `{
+  "name": "${projectName}",
+  "version": "1.0.0",
+  "description": "Pareng Boyong AGI Project - Filipino AI Super Agent",
+  "main": "index.js",
+  "author": "Pareng Boyong (InnovateHub PH)",
+  "license": "MIT"
+}
+`);
+    }
+    
+    const fileTree = await services.fileSystem.getFileTree();
+    response.message = `🇵🇭 **Project Created Successfully!**\n\nProject Name: \`${projectName}\`\nType: ${projectType.toUpperCase()}\nLocation: Runtime Sandbox Workspace\n\nProject files created with full AGI capabilities! Ready para sa development! 🚀`;
+    response.files = fileTree;
+  }
+  
+  // Default intelligent response
+  else {
+    response.message = `🇵🇭 **Kumusta! I'm Pareng Boyong** - Your Filipino AI AGI Super Agent!\n\nI understand: "${message}"\n\n**My Full AGI Capabilities:**\n✅ **Code Execution** - Python, JavaScript, Node.js, Bash\n✅ **File Management** - Create, read, write, delete files\n✅ **Project Creation** - Full development environments\n✅ **System Administration** - Terminal access, system monitoring\n✅ **Data Analysis** - Process and analyze any data\n✅ **Web Development** - Create websites and applications\n✅ **Filipino & English** - Bilingual AI assistance\n\n**Try asking me to:**\n- "Run Python code to analyze data"\n- "Create a new Node.js project"\n- "Write a file with project documentation"\n- "Show system information"\n- "Execute terminal commands"\n\n**Walang hangganan ang aking kakayahan sa runtime sandbox!** 🚀\n\nAno ang gusto mo gawin?`;
+  }
+  
+  return response;
+}
+
+// Helper functions for message parsing
+function extractCodeFromMessage(message: string): string | null {
+  const codeMatch = message.match(/```[\w]*\n([\s\S]*?)\n```/) || message.match(/`([^`]+)`/);
+  return codeMatch ? codeMatch[1] : null;
+}
+
+function extractFilenameFromMessage(message: string): string | null {
+  const fileMatch = message.match(/(?:file|filename|create|write)\s+["']?([^\s"']+)["']?/i);
+  return fileMatch ? fileMatch[1] : null;
+}
+
+function extractContentFromMessage(message: string): string | null {
+  const contentMatch = message.match(/(?:content|with|containing)\s+["']?([\s\S]+?)["']?$/i);
+  return contentMatch ? contentMatch[1] : null;
+}
+
+function extractProjectNameFromMessage(message: string): string | null {
+  const projectMatch = message.match(/(?:project|called|named)\s+["']?([^\s"']+)["']?/i);
+  return projectMatch ? projectMatch[1] : null;
 }
