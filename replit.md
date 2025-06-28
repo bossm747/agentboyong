@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application that creates a cloud-based sandbox development environment. It's built with React on the frontend and Express.js on the backend, featuring real-time collaboration capabilities through WebSockets. The application provides users with a complete IDE experience including file management, code editing, terminal access, and system monitoring.
+This is a comprehensive AI Runtime Sandbox that functions both as a web application and a Model Context Protocol (MCP) server. It provides AI agents with a powerful, isolated execution environment for code development, file management, and system operations. The system features a mobile-first responsive web interface and standardized MCP tools for seamless AI integration.
 
 ## System Architecture
 
@@ -29,32 +29,44 @@ This is a full-stack web application that creates a cloud-based sandbox developm
 
 ## Key Components
 
+### Model Context Protocol (MCP) Server
+- **Standardized AI Integration**: Implements MCP specification for tool-based AI interactions
+- **10 Core Tools**: Session management, file operations, code execution, package installation, project templates
+- **Language Support**: Python, JavaScript, TypeScript, Java, C++, Go, Rust, Bash
+- **Cross-Platform Compatible**: Works with Claude Desktop, Cline, and custom AI applications
+
 ### Session Management
-Each user session is isolated with its own workspace directory and associated services (file system, terminal, system monitor). Sessions are created on-demand and tracked in the database.
+Each session is isolated with its own workspace directory and associated services. Sessions support both web UI and MCP tool access with consistent state management.
 
 ### File System Service
 - Workspace isolation per session under `./workspace/{sessionId}`
 - File CRUD operations with MIME type detection
 - Directory tree structure management
-- File content caching and synchronization
+- MCP tool integration for programmatic access
 
 ### Terminal Service
-- Full terminal emulation using node-pty
-- Multiple terminal instances per session
-- Real-time terminal I/O through WebSockets
-- Cross-platform shell support (bash/powershell)
+- Cross-platform command execution without native dependencies
+- Support for multiple programming language runtimes
+- Real-time execution through WebSockets and MCP tools
+- Process tracking and management
+
+### Mobile-Responsive Web Interface
+- **Collapsible Containers**: File explorer and system monitor slide-out panels
+- **Touch-Optimized**: Mobile-first design with gesture support
+- **Adaptive Layout**: Responsive breakpoints for mobile, tablet, and desktop
+- **Progressive Web App**: Installable with offline capabilities
 
 ### Code Editor
-- Monaco Editor integration for syntax highlighting
+- Monaco Editor integration with syntax highlighting
 - Multi-language support with automatic language detection
 - Real-time file saving with optimistic updates
-- Dark theme optimized for coding
+- Mobile-optimized interface
 
 ### System Monitoring
 - Real-time CPU, memory, and disk usage tracking
 - Process monitoring and management
 - Environment variable management
-- WebSocket-based live updates
+- WebSocket and MCP tool access
 
 ## Data Flow
 

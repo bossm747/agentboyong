@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "ai-runtime-sandbox": {
+      "command": "npm",
+      "args": ["run", "mcp-server"],
+      "description": "AI Runtime Sandbox - A powerful execution environment for AI agents",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}
