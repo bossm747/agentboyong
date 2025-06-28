@@ -53,7 +53,7 @@ def initialize_agent():
         memory_subdir=current_settings["agent_memory_subdir"],
         knowledge_subdirs=["default", current_settings["agent_knowledge_subdir"]],
         mcp_servers=current_settings["mcp_servers"],
-        code_exec_docker_enabled=False,
+        code_exec_docker_enabled=True,  # Now using Runtime Sandbox instead of Docker
         # code_exec_docker_name = "A0-dev",
         # code_exec_docker_image = "frdel/agent-zero-run:development",
         # code_exec_docker_ports = { "22/tcp": 55022, "80/tcp": 55080 }
