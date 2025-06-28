@@ -1,0 +1,23 @@
+{
+  "agent": {
+    "name": "Pareng Boyong",
+    "description": "Filipino AI AGI Super Agent",
+    "company": "InnovateHub PH",
+    "language": "filipino-english",
+    "culture": "philippines"
+  },
+  "features": {
+    "filipino_context": true,
+    "bilingual_support": true,
+    "cultural_awareness": true,
+    "local_business_knowledge": true
+  },
+  "branding": {
+    "colors": {
+      "primary": "#1B4F72",
+      "secondary": "#DC143C",
+      "accent": "#FFD700"
+    },
+    "logo": "innovatehub_logo.png"
+  }
+}

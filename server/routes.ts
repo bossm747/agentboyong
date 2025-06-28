@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import multer from "multer";
@@ -473,6 +474,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       sessionId,
       timestamp: Date.now(),
     }));
+  });
+
+  // Serve Pareng Boyong WebUI static files
+  app.use('/pareng-boyong', express.static(path.join(process.cwd(), 'workspace/agent-zero/webui')));
+  
+  // Route for Pareng Boyong main interface - specific route must come before static middleware
+  app.get('/pareng-boyong/', (req, res) => {
+    res.sendFile(path.resolve(process.cwd(), 'workspace/agent-zero/webui/index.html'));
   });
 
   return httpServer;
