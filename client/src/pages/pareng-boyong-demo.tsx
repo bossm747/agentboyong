@@ -115,23 +115,23 @@ export default function ParengBoyongDemo() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
-        <div className="w-80 bg-white dark:bg-gray-800 border-r p-4 overflow-y-auto">
+        <div className="w-64 bg-white dark:bg-gray-800 border-r p-3 overflow-y-auto">
           {/* Mode Selection */}
-          <div className="mb-6">
-            <h3 className="font-medium mb-3">Agent Mode</h3>
-            <div className="space-y-2">
+          <div className="mb-4">
+            <h3 className="font-medium mb-2 text-sm">Agent Mode</h3>
+            <div className="space-y-1">
               {modeOptions.map((mode) => (
                 <div
                   key={mode.value}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                  className={`p-2 rounded cursor-pointer transition-colors ${
                     selectedMode === mode.value
                       ? 'bg-blue-100 dark:bg-blue-900/20 border border-blue-300'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-700 border border-transparent'
                   }`}
                   onClick={() => setSelectedMode(mode.value)}
                 >
-                  <div className="font-medium text-sm">{mode.label}</div>
-                  <div className="text-xs text-gray-500">{mode.description}</div>
+                  <div className="font-medium text-xs">{mode.label}</div>
+                  <div className="text-[10px] text-gray-500">{mode.description}</div>
                 </div>
               ))}
             </div>
