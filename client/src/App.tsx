@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import SandboxPage from "@/pages/sandbox";
 import AgentZeroPage from "@/pages/agent-zero";
 import ParengBoyongDemo from "@/pages/pareng-boyong-demo";
+import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -14,6 +15,7 @@ function Router() {
       <Route path="/" component={ParengBoyongDemo} />
       <Route path="/sandbox" component={SandboxPage} />
       <Route path="/agent-zero" component={AgentZeroPage} />
+      <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
     </Switch>
   );
