@@ -45,7 +45,7 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState('agent');
 
   const { data: settings, isLoading } = useQuery<{ settings: SettingsData }>({
-    queryKey: ['/api/settings']
+    queryKey: ['/settings_get']
   });
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function Settings() {
 
   const saveSettingsMutation = useMutation({
     mutationFn: (data: Record<string, any>) => {
-      return fetch('/api/settings', {
+      return fetch('/settings_post', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' }
@@ -279,7 +279,7 @@ export default function Settings() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {section.fields.map((field) => (
+                      {section.fields.map((field: SettingsField) => (
                         <div key={field.id} className="space-y-2">
                           <Label 
                             htmlFor={field.id} 

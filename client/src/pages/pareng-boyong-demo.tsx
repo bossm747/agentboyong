@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -196,6 +197,23 @@ export default function ParengBoyongDemo() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <Separator className="my-3 bg-purple-500/30" />
+
+          {/* Navigation */}
+          <div className="mb-4">
+            <h3 className="font-medium mb-2 text-sm text-purple-400">Configuration</h3>
+            <Link href="/settings">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-cyan-400 hover:text-purple-300 hover:bg-gray-800/50 border border-transparent hover:border-purple-500/30"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                AI Models & Settings
+              </Button>
+            </Link>
           </div>
 
           <Separator className="my-3 bg-purple-500/30" />
