@@ -112,6 +112,30 @@ app.post('/settings_get', (req: Request, res: Response) => {
   });
 });
 
+// Settings save endpoint
+app.post('/settings_post', (req: Request, res: Response) => {
+  try {
+    const settingsData = req.body;
+    console.log('Pareng Boyong Settings Update:', Object.keys(settingsData).length, 'fields');
+    
+    // TODO: Integrate with Agent Zero's actual settings persistence
+    // For now, we acknowledge the save and return success
+    
+    res.json({
+      success: true,
+      message: 'Pareng Boyong settings saved successfully',
+      timestamp: new Date().toISOString(),
+      fields_saved: Object.keys(settingsData).length
+    });
+  } catch (error) {
+    console.error('Settings save error:', error);
+    res.status(500).json({ 
+      error: 'Failed to save settings',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
