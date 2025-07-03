@@ -233,12 +233,73 @@ export default function ParengBoyongDemo() {
           />
         )}
         
-        {/* Sidebar - Completely hidden on mobile */}
+        {/* Desktop Sidebar */}
         <div className={`
           hidden lg:block
           w-72 xl:w-80 h-full
           bg-black border-r border-purple-500/30 p-3 overflow-y-auto
           flex-shrink-0
+        `}>
+          {/* Mode Selection */}
+          <div className="mb-4">
+            <h3 className="font-medium mb-2 text-sm text-cyan-400">Agent Mode</h3>
+            <div className="space-y-1">
+              {modeOptions.map((mode) => (
+                <div
+                  key={mode.value}
+                  className={`p-2 rounded cursor-pointer transition-all duration-300 ${
+                    selectedMode === mode.value
+                      ? 'bg-cyan-500/20 border border-cyan-400/50 shadow-lg shadow-cyan-400/20'
+                      : 'hover:bg-gray-800 border border-transparent hover:border-purple-500/30'
+                  }`}
+                  onClick={() => setSelectedMode(mode.value)}
+                >
+                  <div className="font-medium text-xs text-cyan-200">{mode.label}</div>
+                  <div className="text-[10px] text-purple-300">{mode.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Separator className="my-3 bg-purple-500/30" />
+
+          {/* Available Tools */}
+          <div>
+            <h3 className="font-medium mb-2 text-sm text-green-400">Available Tools</h3>
+            <div className="grid grid-cols-2 gap-1">
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 h-8 shadow-lg shadow-cyan-500/20">
+                <Code className="h-3 w-3 mr-1" />
+                Code
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-purple-500/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 h-8 shadow-lg shadow-purple-500/20">
+                <Search className="h-3 w-3 mr-1" />
+                Search
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-green-500/50 text-green-400 hover:bg-green-500/20 hover:border-green-400 h-8 shadow-lg shadow-green-500/20">
+                <Globe className="h-3 w-3 mr-1" />
+                Web
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-orange-500/50 text-orange-400 hover:bg-orange-500/20 hover:border-orange-400 h-8 shadow-lg shadow-orange-500/20">
+                <Terminal className="h-3 w-3 mr-1" />
+                Terminal
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-pink-500/50 text-pink-400 hover:bg-pink-500/20 hover:border-pink-400 h-8 shadow-lg shadow-pink-500/20">
+                <FileText className="h-3 w-3 mr-1" />
+                Files
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs bg-transparent border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/20 hover:border-yellow-400 h-8 shadow-lg shadow-yellow-500/20">
+                <Settings className="h-3 w-3 mr-1" />
+                System
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Sidebar */}
+        <div className={`
+          fixed top-0 left-0 h-full w-72 bg-black border-r border-purple-500/30 p-3 overflow-y-auto z-50 lg:hidden
+          transform transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           {/* Mobile Close Button */}
           <div className="flex justify-end mb-3 md:hidden">
