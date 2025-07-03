@@ -170,9 +170,9 @@ export default function ParengBoyongDemo() {
   ];
 
   return (
-    <div className="h-screen flex flex-col bg-black fixed inset-0 overflow-hidden">
+    <div className="h-screen w-screen flex flex-col bg-black overflow-hidden relative">
       {/* Header */}
-      <div className="bg-black border-b border-cyan-500/30 p-2 sm:p-3 shadow-lg shadow-cyan-500/20">
+      <div className="bg-black border-b border-cyan-500/30 p-2 sm:p-3 shadow-lg shadow-cyan-500/20 flex-shrink-0 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Mobile Menu Button */}
@@ -224,7 +224,7 @@ export default function ParengBoyongDemo() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative min-h-0 p-0">
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div 
@@ -238,7 +238,7 @@ export default function ParengBoyongDemo() {
           hidden lg:block
           w-72 xl:w-80 h-full
           bg-black border-r border-purple-500/30 p-3 overflow-y-auto
-          flex-shrink-0
+          flex-shrink-0 z-20
         `}>
           {/* Mode Selection */}
           <div className="mb-4">
@@ -298,7 +298,7 @@ export default function ParengBoyongDemo() {
         {/* Mobile Sidebar */}
         <div className={`
           fixed top-0 left-0 h-full w-72 bg-black border-r border-purple-500/30 p-3 overflow-y-auto z-50 lg:hidden
-          transform transition-transform duration-300 ease-in-out
+          transform transition-transform duration-300 ease-in-out shadow-2xl
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           {/* Mobile Close Button */}
@@ -491,10 +491,10 @@ export default function ParengBoyongDemo() {
         </div>
 
         {/* Main Content Area - Mobile takes full width */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 relative">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 h-full">
             {/* Tabs - Hidden on mobile, visible on desktop */}
-            <div className="hidden lg:block border-b border-purple-500/30 bg-black px-1 py-0.5 flex-shrink-0">
+            <div className="hidden lg:block border-b border-purple-500/30 bg-black px-1 py-0.5 flex-shrink-0 z-10">
               <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth grid grid-cols-5">
                 <TabsTrigger 
                   value="chat" 
@@ -539,9 +539,9 @@ export default function ParengBoyongDemo() {
               </TabsList>
             </div>
 
-            <TabsContent value="chat" className="flex-1 flex flex-col m-0 h-full">
+            <TabsContent value="chat" className="flex-1 flex flex-col m-0 p-0 h-full min-h-0">
               {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-black min-h-0">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-black min-h-0 scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[90%] sm:max-w-[85%] lg:max-w-[80%] rounded-lg p-3 sm:p-4 text-sm sm:text-base ${
@@ -577,7 +577,7 @@ export default function ParengBoyongDemo() {
 
               {/* Message Input with Multimodal Support */}
               <div 
-                className={`border-t border-purple-500/30 bg-black p-3 sm:p-4 sticky bottom-0 ${isDragOver ? 'bg-cyan-500/10 border-cyan-400' : ''}`}
+                className={`border-t border-purple-500/30 bg-black p-3 sm:p-4 flex-shrink-0 ${isDragOver ? 'bg-cyan-500/10 border-cyan-400' : ''}`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
@@ -678,20 +678,26 @@ export default function ParengBoyongDemo() {
               </div>
             </TabsContent>
 
-            <TabsContent value="webview" className="flex-1 m-0 p-0 h-full overflow-hidden">
+            <TabsContent value="webview" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
               <WebViewPanel sessionId={currentContext} />
             </TabsContent>
 
-            <TabsContent value="tasks" className="flex-1 m-0 p-4">
-              <BackgroundTasksPanel sessionId={currentContext} />
+            <TabsContent value="tasks" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
+              <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
+                <BackgroundTasksPanel sessionId={currentContext} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="files" className="flex-1 m-0 p-4">
-              <FileManagerPanel sessionId={currentContext} />
+            <TabsContent value="files" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
+              <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
+                <FileManagerPanel sessionId={currentContext} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="terminal" className="flex-1 m-0 p-4">
-              <TerminalPanel sessionId={currentContext} />
+            <TabsContent value="terminal" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
+              <div className="h-full p-4">
+                <TerminalPanel sessionId={currentContext} />
+              </div>
             </TabsContent>
           </Tabs>
         </div>
