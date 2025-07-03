@@ -138,10 +138,10 @@ export default function ParengBoyongDemo() {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="lg:hidden text-cyan-400 hover:bg-cyan-500/20 p-2"
+              className="lg:hidden text-cyan-400 hover:bg-cyan-500/20 p-2 touch-friendly min-h-[44px] min-w-[44px]"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             >
-              {isSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
             <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shadow-lg shadow-cyan-400/50 border border-cyan-400/50">
               🇵🇭
@@ -172,7 +172,7 @@ export default function ParengBoyongDemo() {
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setIsSidebarOpen(false)}
           />
         )}
@@ -180,13 +180,14 @@ export default function ParengBoyongDemo() {
         {/* Sidebar */}
         <div className={`
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-          md:translate-x-0 
-          fixed md:relative 
+          lg:translate-x-0 
+          fixed lg:relative 
           top-0 left-0 
-          z-50 md:z-auto
-          w-64 h-full md:h-auto
+          z-50 lg:z-auto
+          w-72 sm:w-80 h-full lg:h-auto
           bg-black border-r border-purple-500/30 p-3 overflow-y-auto
           transition-transform duration-300 ease-in-out
+          shadow-xl lg:shadow-none
         `}>
           {/* Mobile Close Button */}
           <div className="flex justify-end mb-3 md:hidden">
@@ -358,17 +359,17 @@ export default function ParengBoyongDemo() {
 
             <TabsContent value="chat" className="flex-1 flex flex-col m-0">
               {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 bg-black">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-black">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-3 sm:p-4 text-sm sm:text-base ${
+                    <div className={`max-w-[90%] sm:max-w-[85%] lg:max-w-[80%] rounded-lg p-3 sm:p-4 text-sm sm:text-base ${
                       msg.type === 'user' 
                         ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border border-cyan-400/50 text-cyan-100 shadow-lg shadow-cyan-500/30' 
                         : msg.type === 'system'
                         ? 'bg-green-500/20 border border-green-400/50 text-green-200 shadow-lg shadow-green-400/30'
                         : 'bg-gray-800/50 border border-purple-500/50 text-purple-100 shadow-lg shadow-purple-500/20'
                     }`}>
-                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      <div className="whitespace-pre-wrap break-words overflow-wrap-anywhere">{msg.content}</div>
                       <div className={`text-xs mt-2 ${
                         msg.type === 'user' ? 'text-cyan-300' : 'text-purple-300'
                       }`}>
@@ -393,7 +394,7 @@ export default function ParengBoyongDemo() {
               </div>
 
               {/* Message Input */}
-              <div className="border-t border-purple-500/30 bg-black p-3 sm:p-4">
+              <div className="border-t border-purple-500/30 bg-black p-3 sm:p-4 sticky bottom-0">
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                   <Input
                     value={message}

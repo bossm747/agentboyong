@@ -900,9 +900,9 @@ Don't worry, natry ko pa rin ang best ko para sa inyo. May ibang approach ba tay
       // Generate application files
       const files = this.generateAppFiles(appType, requirements, appName);
       
-      // Create all files
+      // Create all files in the session workspace
       for (const [filename, content] of Object.entries(files)) {
-        await this.fileSystem.writeFile(filename, content);
+        await this.fileSystem.writeFile(sessionId, filename, content);
       }
 
       // Start the application server

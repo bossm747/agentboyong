@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+  
+  body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Improve touch targets */
+  button, input, select, textarea {
+    min-height: 44px;
+  }
+  
+  /* Better scrolling on mobile */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger tap targets for touch devices */
+  .touch-friendly {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);
