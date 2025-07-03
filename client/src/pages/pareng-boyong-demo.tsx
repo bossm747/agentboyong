@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive, Menu, X, Activity, Monitor } from "lucide-react";
+import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive, Menu, X, Activity, Monitor, FolderOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import WebViewPanel from "@/components/webview-panel";
 import BackgroundTasksPanel from "@/components/background-tasks-panel";
+import FileManagerPanel from "@/components/file-manager-panel";
 
 export default function ParengBoyongDemo() {
   const [message, setMessage] = useState("");
@@ -322,6 +323,13 @@ export default function ParengBoyongDemo() {
                   <Activity className="h-4 w-4 mr-2" />
                   Background Tasks
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="files" 
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+                >
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  Files
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -394,6 +402,10 @@ export default function ParengBoyongDemo() {
 
             <TabsContent value="tasks" className="flex-1 m-0 p-4">
               <BackgroundTasksPanel sessionId={currentContext} />
+            </TabsContent>
+
+            <TabsContent value="files" className="flex-1 m-0 p-4">
+              <FileManagerPanel sessionId={currentContext} />
             </TabsContent>
           </Tabs>
         </div>
