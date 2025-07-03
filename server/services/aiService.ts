@@ -3,6 +3,8 @@ import { GoogleGenAI } from '@google/genai';
 import { FileSystemService } from './fileSystem';
 import { TerminalService } from './terminal';
 import { CognitiveService } from './cognitiveService';
+import { AgentProcessor } from '../agent-zero/agent-processor';
+import { AgentContextManager } from '../agent-zero/context';
 import { db } from '../db';
 import { 
   conversations, 
@@ -53,11 +55,13 @@ export class AIService {
   private fileSystem: FileSystemService;
   private terminal: TerminalService;
   private cognitive?: CognitiveService;
+  private agentProcessor: AgentProcessor;
   private conversationHistory: Map<string, AIMessage[]> = new Map();
 
   constructor(sessionId: string) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
+    this.agentProcessor = new AgentProcessor(sessionId);
     
     // Re-enable cognitive service with error handling
     try {
@@ -331,6 +335,11 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
           assistantResponse = await this.handleFileOperation(fileOperation, sessionId);
           modelUsed = 'file-system';
           usedFallback = false;
+        } else if (await this.shouldUseAgentZero(message, mode)) {
+          // Use Agent Zero for complex multi-step operations
+          assistantResponse = await this.processWithAgentZero(message, sessionId, userId, mode);
+          modelUsed = 'agent-zero';
+          usedFallback = false;
         } else {
           // Standard AI processing with memory context and mode-specific behavior
           const contextualSystemPrompt = this.buildContextualPrompt(memoryContext, mode);
@@ -466,7 +475,16 @@ RESEARCHER MODE: Focus on research, analysis, and information gathering. Provide
 
       hacker: `${basePrompt}
 
-HACKER MODE: Focus on ethical security analysis, penetration testing, and vulnerability assessment. Always emphasize ethical practices and responsible security research.`,
+HACKER MODE: Focus on ethical security analysis, penetration testing, and vulnerability assessment. Always emphasize ethical practices and responsible security research.
+
+Available Security Tools:
+- System reconnaissance and network analysis
+- Vulnerability scanning and assessment  
+- Security monitoring and threat detection
+- Ethical penetration testing techniques
+- Security audit and compliance checking
+
+Remember: All security activities are conducted in a safe, isolated sandbox environment for educational and security improvement purposes only.`,
 
       default: basePrompt
     };
@@ -515,6 +533,18 @@ HACKER MODE: Focus on ethical security analysis, penetration testing, and vulner
         };
       }
     }
+
+    // Terminal/command operation
+    if (lowerMessage.includes('run') || lowerMessage.includes('execute') || 
+        lowerMessage.includes('command') || lowerMessage.includes('terminal')) {
+      const commandMatch = message.match(/(?:run|execute).*?(?:command)?:?\s*(.+)/i);
+      if (commandMatch) {
+        return {
+          type: 'terminal',
+          params: { command: commandMatch[1].trim() }
+        };
+      }
+    }
     
     return null;
   }
@@ -552,6 +582,22 @@ ${content}
 
 Ito ang content ng file. May gusto ka bang i-edit o i-modify?`;
 
+        case 'terminal':
+          const result = await this.terminal.executeCommand('bash', ['-c', operation.params.command]);
+          return `💻 **Terminal Command Executed**
+
+**Command**: \`${operation.params.command}\`
+
+**Output**:
+\`\`\`
+${result.stdout || result.stderr || 'Command completed with no output'}
+\`\`\`
+
+**Exit Code**: ${result.exitCode}
+${result.exitCode === 0 ? '✅ Success!' : '❌ Command failed'}
+
+Tapos na ang command execution. May iba pa bang gusto ninyong i-execute?`;
+
         default:
           return `❌ Unknown file operation: ${operation.type}`;
       }
@@ -568,5 +614,78 @@ Ito ang content ng file. May gusto ka bang i-edit o i-modify?`;
         return `${indent}📄 ${node.name}`;
       }
     }).join('\n');
+  }
+
+  private async shouldUseAgentZero(message: string, mode: string): Promise<boolean> {
+    const agentZeroIndicators = [
+      'step by step', 'multi-step', 'complex task', 'project', 'workflow',
+      'terminal', 'command', 'execute', 'run', 'install', 'setup',
+      'comprehensive', 'detailed analysis', 'system analysis'
+    ];
+
+    const messageWords = message.toLowerCase();
+    const hasAgentZeroIndicators = agentZeroIndicators.some(indicator => 
+      messageWords.includes(indicator)
+    );
+
+    // Use Agent Zero for terminal operations, complex projects, or hacker mode
+    const securityOperations = this.detectSecurityOperation(message);
+    
+    return hasAgentZeroIndicators || 
+           mode === 'hacker' || 
+           securityOperations ||
+           (mode === 'developer' && message.length > 50);
+  }
+
+  private async processWithAgentZero(message: string, sessionId: string, userId: string, mode: string): Promise<string> {
+    try {
+      console.log('🎯 Activating Agent Zero for advanced processing...');
+      
+      // Create or get Agent Zero context
+      let contextId = `${sessionId}-agent-zero`;
+      let context = AgentContextManager.getContext(contextId);
+      
+      if (!context) {
+        context = AgentContextManager.createContext(contextId, {
+          name: `Pareng Boyong ${mode.toUpperCase()} Mode`,
+          agent: 'pareng-boyong',
+          usr: userId
+        });
+      }
+
+      // Process message with Agent Zero
+      const response = await this.agentProcessor.processMessage(contextId, message);
+      
+      // Format response for chat interface
+      return `🎯 **Agent Zero Enhanced Processing**
+
+**Mode**: ${mode.toUpperCase()} 
+**Task**: ${message}
+
+**Agent Zero Response:**
+${response.content}
+
+**Tools Used**: ${response.kvps?.tool_used || 'Enhanced reasoning'}
+**Status**: ${response.kvps?.status || 'completed'}
+
+Salamat sa pagtitiwala kay Pareng Boyong! May kailangan pa ba kayong assistance?`;
+
+    } catch (error) {
+      console.error('Agent Zero processing failed:', error);
+      return `❌ Agent Zero processing encountered an issue: ${error}
+
+Don't worry, natry ko pa rin ang best ko para sa inyo. May ibang approach ba tayo?`;
+    }
+  }
+
+  private detectSecurityOperation(message: string): boolean {
+    const securityKeywords = [
+      'security', 'vulnerability', 'penetration', 'scan', 'audit', 'hack',
+      'reconnaissance', 'footprint', 'nmap', 'port scan', 'vulnerability assessment',
+      'security analysis', 'threat detection', 'network analysis', 'system scan'
+    ];
+    
+    const messageWords = message.toLowerCase();
+    return securityKeywords.some(keyword => messageWords.includes(keyword));
   }
 }
