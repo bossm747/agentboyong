@@ -289,6 +289,75 @@ export default function ParengBoyongDemo() {
 
           <Separator className="my-3 bg-purple-500/30" />
 
+          {/* Mobile Navigation - Only visible on mobile */}
+          <div className="lg:hidden mb-4">
+            <h3 className="font-medium mb-2 text-sm text-cyan-400">Navigation</h3>
+            <div className="space-y-1">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setActiveTab("chat");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full justify-start text-xs ${activeTab === 'chat' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
+              >
+                <Terminal className="h-3 w-3 mr-2" />
+                Chat with Pareng Boyong
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setActiveTab("webview");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full justify-start text-xs ${activeTab === 'webview' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
+              >
+                <Globe className="h-3 w-3 mr-2" />
+                App Preview
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setActiveTab("tasks");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full justify-start text-xs ${activeTab === 'tasks' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
+              >
+                <Activity className="h-3 w-3 mr-2" />
+                Background Tasks
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setActiveTab("files");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full justify-start text-xs ${activeTab === 'files' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
+              >
+                <FolderOpen className="h-3 w-3 mr-2" />
+                File Manager
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setActiveTab("terminal");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full justify-start text-xs ${activeTab === 'terminal' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
+              >
+                <Code className="h-3 w-3 mr-2" />
+                Terminal
+              </Button>
+            </div>
+          </div>
+
+          <Separator className="my-3 bg-purple-500/30" />
+
           {/* Available Tools */}
           <div>
             <h3 className="font-medium mb-2 text-sm text-green-400">Available Tools</h3>
@@ -324,7 +393,8 @@ export default function ParengBoyongDemo() {
         {/* Main Content Area - Mobile takes full width */}
         <div className="flex-1 flex flex-col min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <div className="border-b border-purple-500/30 bg-black px-1 py-0.5 flex-shrink-0">
+            {/* Tabs - Hidden on mobile, visible on desktop */}
+            <div className="hidden lg:block border-b border-purple-500/30 bg-black px-1 py-0.5 flex-shrink-0">
               <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth grid grid-cols-5">
                 <TabsTrigger 
                   value="chat" 
