@@ -12,6 +12,14 @@ import WebViewPanel from "@/components/webview-panel";
 import BackgroundTasksPanel from "@/components/background-tasks-panel";
 import FileManagerPanel from "@/components/file-manager-panel";
 import { TerminalPanel } from "@/components/terminal-panel";
+import { 
+  ChatSkeleton, 
+  WebViewSkeleton, 
+  BackgroundTasksSkeleton, 
+  FileManagerSkeleton, 
+  TerminalSkeleton,
+  LoadingTransition 
+} from "@/components/loading-skeletons";
 // import innovateHubLogo from "@assets/innovatehub_1751536111664.png";
 
 export default function ParengBoyongDemo() {
@@ -31,6 +39,8 @@ export default function ParengBoyongDemo() {
   const [activeTab, setActiveTab] = useState("chat");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isTabLoading, setIsTabLoading] = useState(false);
+  const [loadingTabs, setLoadingTabs] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -125,6 +135,22 @@ export default function ParengBoyongDemo() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleTabChange = (newTab: string) => {
+    if (newTab !== activeTab) {
+      setLoadingTabs(prev => new Set(prev).add(newTab));
+      setActiveTab(newTab);
+      
+      // Simulate loading time for smooth transition
+      setTimeout(() => {
+        setLoadingTabs(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(newTab);
+          return newSet;
+        });
+      }, 300);
     }
   };
 
@@ -492,7 +518,7 @@ export default function ParengBoyongDemo() {
 
         {/* Main Content Area - Mobile takes full width */}
         <div className="flex-1 flex flex-col min-h-0 relative">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 h-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col min-h-0 h-full">
             {/* Tabs - Hidden on mobile, visible on desktop */}
             <div className="hidden lg:block border-b border-purple-500/30 bg-black px-1 py-0.5 flex-shrink-0 z-10">
               <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth grid grid-cols-5">
@@ -562,11 +588,16 @@ export default function ParengBoyongDemo() {
                 ))}
                 
                 {isProcessing && (
-                  <div className="flex justify-start">
+                  <div className="flex justify-start animate-in fade-in-0 duration-300">
                     <div className="bg-gray-800 border border-cyan-400/50 rounded-lg p-4 max-w-[80%] shadow-lg shadow-cyan-400/20">
                       <div className="flex items-center space-x-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
                         <span className="text-cyan-300">Pareng Boyong is thinking...</span>
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        <div className="h-2 bg-gray-700 rounded animate-pulse"></div>
+                        <div className="h-2 bg-gray-700 rounded animate-pulse w-3/4"></div>
+                        <div className="h-2 bg-gray-700 rounded animate-pulse w-1/2"></div>
                       </div>
                     </div>
                   </div>
@@ -679,25 +710,45 @@ export default function ParengBoyongDemo() {
             </TabsContent>
 
             <TabsContent value="webview" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden relative">
-              <WebViewPanel sessionId={currentContext} />
+              <LoadingTransition
+                isLoading={loadingTabs.has('webview')}
+                skeleton={<WebViewSkeleton />}
+              >
+                <WebViewPanel sessionId={currentContext} />
+              </LoadingTransition>
             </TabsContent>
 
             <TabsContent value="tasks" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
-              <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
-                <BackgroundTasksPanel sessionId={currentContext} />
-              </div>
+              <LoadingTransition
+                isLoading={loadingTabs.has('tasks')}
+                skeleton={<BackgroundTasksSkeleton />}
+              >
+                <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
+                  <BackgroundTasksPanel sessionId={currentContext} />
+                </div>
+              </LoadingTransition>
             </TabsContent>
 
             <TabsContent value="files" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
-              <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
-                <FileManagerPanel sessionId={currentContext} />
-              </div>
+              <LoadingTransition
+                isLoading={loadingTabs.has('files')}
+                skeleton={<FileManagerSkeleton />}
+              >
+                <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
+                  <FileManagerPanel sessionId={currentContext} />
+                </div>
+              </LoadingTransition>
             </TabsContent>
 
             <TabsContent value="terminal" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
-              <div className="h-full p-4">
-                <TerminalPanel sessionId={currentContext} />
-              </div>
+              <LoadingTransition
+                isLoading={loadingTabs.has('terminal')}
+                skeleton={<TerminalSkeleton />}
+              >
+                <div className="h-full p-4">
+                  <TerminalPanel sessionId={currentContext} />
+                </div>
+              </LoadingTransition>
             </TabsContent>
           </Tabs>
         </div>
