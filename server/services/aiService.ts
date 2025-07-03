@@ -201,35 +201,53 @@ Only include genuinely important information worth remembering. Return empty arr
 
   private async tryGemini(messages: AIMessage[]): Promise<{ success: boolean; content: string }> {
     try {
-      // Convert messages to Gemini format - handle conversation properly
+      console.log('🔑 Checking Gemini API key...');
+      if (!process.env.GEMINI_API_KEY) {
+        console.log('❌ Gemini API key not found');
+        return { success: false, content: '' };
+      }
+
+      console.log('📤 Converting messages to Gemini format...');
+      
+      // Build the full prompt including system message
       const systemMessage = messages.find(m => m.role === 'system');
       const conversationMessages = messages.filter(m => m.role !== 'system');
       
-      // Combine system message with user message for Gemini
-      let prompt = '';
+      let fullPrompt = '';
       if (systemMessage) {
-        prompt = systemMessage.content + '\n\n';
+        fullPrompt = systemMessage.content + '\n\n';
       }
       
-      // Add conversation history
+      // Add conversation messages
       conversationMessages.forEach(msg => {
         if (msg.role === 'user') {
-          prompt += `User: ${msg.content}\n`;
+          fullPrompt += `Human: ${msg.content}\n`;
         } else if (msg.role === 'assistant') {
-          prompt += `Assistant: ${msg.content}\n`;
+          fullPrompt += `Assistant: ${msg.content}\n`;
         }
       });
+      
+      fullPrompt += 'Assistant: ';
 
-      const response = await genai.models.generateContent({
-        model: 'gemini-2.5-pro',
-        contents: prompt
+      console.log('📡 Sending request to Gemini API...');
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Gemini API timeout after 15 seconds')), 15000)
+      );
+
+      const apiCall = genai.models.generateContent({
+        model: "gemini-2.5-flash", // Use the more reliable flash model
+        contents: fullPrompt,
       });
 
-      const content = response.text || '';
-      return { success: true, content };
+      const response = await Promise.race([apiCall, timeoutPromise]);
+      
+      console.log('📥 Received response from Gemini');
+      return { success: true, content: response.text || '' };
 
     } catch (error) {
-      console.error('Gemini API Error:', error);
+      console.error('❌ Gemini API Error:', error);
       return { success: false, content: '' };
     }
   }
@@ -306,20 +324,30 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
           }
         ];
 
-        // Skip Gemini temporarily and use OpenAI directly for debugging
-        console.log('🔥 Using OpenAI (Gemini temporarily disabled)...');
-        
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-          messages: history,
-          temperature: 0.7,
-          max_tokens: 2000
-        });
+        // Try Gemini 2.5 Flash first with improved implementation
+        console.log('🔥 Trying Gemini 2.5 Flash...');
+        const geminiResponse = await this.tryGemini(history);
+        if (geminiResponse.success) {
+          console.log('✅ Gemini succeeded');
+          assistantResponse = geminiResponse.content;
+          modelUsed = 'gemini-2.5-flash';
+          usedFallback = false;
+        } else {
+          console.log('❌ Gemini failed, falling back to OpenAI...');
+          
+          // Fallback to OpenAI
+          const completion = await openai.chat.completions.create({
+            model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            messages: history,
+            temperature: 0.7,
+            max_tokens: 2000
+          });
 
-        console.log('✅ OpenAI succeeded');
-        assistantResponse = completion.choices[0].message.content || '';
-        modelUsed = 'gpt-4o';
-        usedFallback = true;
+          console.log('✅ OpenAI succeeded');
+          assistantResponse = completion.choices[0].message.content || '';
+          modelUsed = 'gpt-4o';
+          usedFallback = true;
+        }
       }
 
       // Re-enable conversation saving now that basic chat works
