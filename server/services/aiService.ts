@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
 import { FileSystemService } from './fileSystem';
 import { TerminalService } from './terminal';
+import { CognitiveService } from './cognitiveService';
 import { db } from '../db';
 import { 
   conversations, 
@@ -45,11 +46,13 @@ export interface MemoryContext {
 export class AIService {
   private fileSystem: FileSystemService;
   private terminal: TerminalService;
+  private cognitive: CognitiveService;
   private conversationHistory: Map<string, AIMessage[]> = new Map();
 
   constructor(sessionId: string) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
+    this.cognitive = new CognitiveService(sessionId);
   }
 
   // Memory Management Methods
@@ -224,45 +227,84 @@ Only include genuinely important information worth remembering. Return empty arr
       // Save user message to database
       await this.saveConversation(sessionId, userId, 'user', message, mode);
 
-      // Build contextual prompt with memory
-      const contextualSystemPrompt = this.buildContextualPrompt(memoryContext, mode);
+      // Check if this requires autonomous problem-solving
+      let requiresAutonomousReasoning = await this.shouldUseAutonomousReasoning(message, mode);
       
-      // Prepare conversation history with memory context
-      const history: AIMessage[] = [
-        {
-          role: 'system',
-          content: contextualSystemPrompt
-        },
-        {
-          role: 'user',
-          content: message
-        }
-      ];
-
       let assistantResponse = '';
       let modelUsed = '';
       let usedFallback = false;
+      let autonomousResults = null;
 
-      // Try Gemini 2.5 Pro first
-      const geminiResponse = await this.tryGemini(history);
-      if (geminiResponse.success) {
-        assistantResponse = geminiResponse.content;
-        modelUsed = 'gemini-2.5-pro';
-        usedFallback = false;
-      } else {
-        console.log('Gemini failed, falling back to OpenAI...');
+      if (requiresAutonomousReasoning) {
+        console.log('🧠 Activating autonomous reasoning for complex problem...');
         
-        // Fallback to OpenAI
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-          messages: history,
-          temperature: 0.7,
-          max_tokens: 2000
-        });
+        try {
+          // Use cognitive service for autonomous problem-solving
+          autonomousResults = await this.cognitive.autonomousReasoningProcess(userId, sessionId, message);
+          
+          assistantResponse = `🧠 **Autonomous Problem-Solving Activated**
 
-        assistantResponse = completion.choices[0].message.content || '';
-        modelUsed = 'gpt-4o';
-        usedFallback = true;
+**Problem Analysis Complete:**
+${autonomousResults.solution}
+
+**Cognitive Process:**
+• Generated ${autonomousResults.reasoning.thoughtProcess ? Object.keys(autonomousResults.reasoning.thoughtProcess).length : 0} reasoning steps
+• Used ${autonomousResults.reasoning.toolsSelected.length} tools: ${autonomousResults.reasoning.toolsSelected.join(', ')}
+• Created ${autonomousResults.newToolsCreated.length} new tools
+
+**New Capabilities Gained:**
+${autonomousResults.newToolsCreated.map(tool => `• ${tool.name}: ${tool.description}`).join('\n')}
+
+**Experience Learned:**
+${autonomousResults.experienceGained ? autonomousResults.experienceGained.learningInsights : 'Continuing to learn from this interaction'}
+
+This autonomous reasoning session has enhanced my capabilities and problem-solving abilities!`;
+
+          modelUsed = 'cognitive-agent-zero';
+          usedFallback = false;
+        } catch (cognitiveError) {
+          console.error('Cognitive reasoning failed, falling back to standard AI:', cognitiveError);
+          requiresAutonomousReasoning = false; // Fall back to standard processing
+        }
+      }
+
+      if (!requiresAutonomousReasoning || !assistantResponse) {
+        // Standard AI processing with memory context
+        const contextualSystemPrompt = this.buildContextualPrompt(memoryContext, mode);
+        
+        // Prepare conversation history with memory context
+        const history: AIMessage[] = [
+          {
+            role: 'system',
+            content: contextualSystemPrompt
+          },
+          {
+            role: 'user',
+            content: message
+          }
+        ];
+
+        // Try Gemini 2.5 Pro first
+        const geminiResponse = await this.tryGemini(history);
+        if (geminiResponse.success) {
+          assistantResponse = geminiResponse.content;
+          modelUsed = 'gemini-2.5-pro';
+          usedFallback = false;
+        } else {
+          console.log('Gemini failed, falling back to OpenAI...');
+          
+          // Fallback to OpenAI
+          const completion = await openai.chat.completions.create({
+            model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            messages: history,
+            temperature: 0.7,
+            max_tokens: 2000
+          });
+
+          assistantResponse = completion.choices[0].message.content || '';
+          modelUsed = 'gpt-4o';
+          usedFallback = true;
+        }
       }
 
       // Save assistant response to database
@@ -281,6 +323,9 @@ Only include genuinely important information worth remembering. Return empty arr
       if (memoryContext.recentConversations.length > 0) {
         memoryInsights.push(`Considering context from ${memoryContext.recentConversations.length} recent conversations`);
       }
+      if (autonomousResults && autonomousResults.newToolsCreated && autonomousResults.newToolsCreated.length > 0) {
+        memoryInsights.push(`Created ${autonomousResults.newToolsCreated.length} new tools for enhanced capabilities`);
+      }
 
       return {
         content: assistantResponse,
@@ -293,6 +338,41 @@ Only include genuinely important information worth remembering. Return empty arr
       console.error('AI Service Error:', error);
       throw new Error('Failed to process AI request');
     }
+  }
+
+  private async shouldUseAutonomousReasoning(message: string, mode: string): Promise<boolean> {
+    const complexityIndicators = [
+      'analyze', 'solve', 'create', 'build', 'develop', 'research', 'investigate',
+      'optimize', 'automate', 'algorithm', 'system', 'architecture', 'design',
+      'complex', 'advanced', 'sophisticated', 'comprehensive', 'detailed'
+    ];
+
+    const hackingIndicators = [
+      'security', 'vulnerability', 'penetration', 'scan', 'exploit', 'hack',
+      'audit', 'assessment', 'reconnaissance', 'footprint'
+    ];
+
+    const messageWords = message.toLowerCase().split(' ');
+    const hasComplexityIndicators = complexityIndicators.some(indicator => 
+      messageWords.some(word => word.includes(indicator))
+    );
+    
+    const hasHackingIndicators = hackingIndicators.some(indicator => 
+      messageWords.some(word => word.includes(indicator))
+    );
+
+    // Use autonomous reasoning for:
+    // 1. Complex problems (multiple indicators)
+    // 2. Hacker mode with security-related tasks
+    // 3. Developer mode with system/architecture requests
+    // 4. Research mode with analysis requests
+    
+    return (
+      (hasComplexityIndicators && messageWords.length > 10) ||
+      (mode === 'hacker' && hasHackingIndicators) ||
+      (mode === 'developer' && messageWords.some(word => ['system', 'architecture', 'build'].includes(word))) ||
+      (mode === 'researcher' && messageWords.some(word => ['analyze', 'research', 'investigate'].includes(word)))
+    );
   }
 
   private getSystemPrompt(mode: string): string {

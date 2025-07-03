@@ -78,11 +78,57 @@ export const knowledge = pgTable("knowledge", {
   userId: text("user_id").notNull(),
   topic: text("topic").notNull(),
   content: text("content").notNull(),
-  source: text("source"), // 'conversation', 'research', 'external'
+  source: text("source"), // 'conversation', 'research', 'external', 'experience', 'tool_creation'
   confidence: doublePrecision("confidence").default(0.8).notNull(), // 0-1 scale
   tags: text("tags").array().default([]).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Dynamic tool creation and learning
+export const tools = pgTable("tools", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  code: text("code").notNull(),
+  language: text("language").notNull(), // 'python', 'javascript', 'bash'
+  category: text("category").notNull(), // 'analysis', 'automation', 'research', 'security'
+  successCount: integer("success_count").default(0).notNull(),
+  failureCount: integer("failure_count").default(0).notNull(),
+  effectiveness: doublePrecision("effectiveness").default(0.5).notNull(), // 0-1 scale
+  lastUsed: timestamp("last_used").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Learning experiences and problem-solving patterns
+export const experiences = pgTable("experiences", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  problemType: text("problem_type").notNull(),
+  problemDescription: text("problem_description").notNull(),
+  solutionApproach: text("solution_approach").notNull(),
+  toolsUsed: text("tools_used").array().default([]).notNull(),
+  outcome: text("outcome").notNull(), // 'success', 'partial_success', 'failure'
+  learningInsights: text("learning_insights").notNull(),
+  applicability: text("applicability").array().default([]).notNull(), // similar problem contexts
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Autonomous reasoning and thought processes
+export const reasoningChains = pgTable("reasoning_chains", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  sessionId: text("session_id").notNull(),
+  problemStatement: text("problem_statement").notNull(),
+  thoughtProcess: jsonb("thought_process").notNull(), // step-by-step reasoning
+  toolsConsidered: text("tools_considered").array().default([]).notNull(),
+  toolsSelected: text("tools_selected").array().default([]).notNull(),
+  executionPlan: text("execution_plan").notNull(),
+  result: text("result"),
+  reflections: text("reflections"), // what was learned
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -144,6 +190,36 @@ export const insertKnowledgeSchema = createInsertSchema(knowledge).pick({
   tags: true,
 });
 
+export const insertToolSchema = createInsertSchema(tools).pick({
+  userId: true,
+  name: true,
+  description: true,
+  code: true,
+  language: true,
+  category: true,
+});
+
+export const insertExperienceSchema = createInsertSchema(experiences).pick({
+  userId: true,
+  problemType: true,
+  problemDescription: true,
+  solutionApproach: true,
+  toolsUsed: true,
+  outcome: true,
+  learningInsights: true,
+  applicability: true,
+});
+
+export const insertReasoningChainSchema = createInsertSchema(reasoningChains).pick({
+  userId: true,
+  sessionId: true,
+  problemStatement: true,
+  thoughtProcess: true,
+  toolsConsidered: true,
+  toolsSelected: true,
+  executionPlan: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -167,6 +243,15 @@ export type Memory = typeof memories.$inferSelect;
 
 export type InsertKnowledge = z.infer<typeof insertKnowledgeSchema>;
 export type Knowledge = typeof knowledge.$inferSelect;
+
+export type InsertTool = z.infer<typeof insertToolSchema>;
+export type Tool = typeof tools.$inferSelect;
+
+export type InsertExperience = z.infer<typeof insertExperienceSchema>;
+export type Experience = typeof experiences.$inferSelect;
+
+export type InsertReasoningChain = z.infer<typeof insertReasoningChainSchema>;
+export type ReasoningChain = typeof reasoningChains.$inferSelect;
 
 // Database relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -222,6 +307,31 @@ export const knowledgeRelations = relations(knowledge, ({ one }) => ({
   user: one(users, {
     fields: [knowledge.userId],
     references: [users.id],
+  }),
+}));
+
+export const toolsRelations = relations(tools, ({ one }) => ({
+  user: one(users, {
+    fields: [tools.userId],
+    references: [users.id],
+  }),
+}));
+
+export const experiencesRelations = relations(experiences, ({ one }) => ({
+  user: one(users, {
+    fields: [experiences.userId],
+    references: [users.id],
+  }),
+}));
+
+export const reasoningChainsRelations = relations(reasoningChains, ({ one }) => ({
+  user: one(users, {
+    fields: [reasoningChains.userId],
+    references: [users.id],
+  }),
+  session: one(sessions, {
+    fields: [reasoningChains.sessionId],
+    references: [sessions.id],
   }),
 }));
 
