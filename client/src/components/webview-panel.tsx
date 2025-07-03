@@ -70,12 +70,39 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
 
   return (
     <div className="w-full h-full flex flex-col bg-black overflow-hidden">
-      {/* Header - Minimal height */}
-      <div className="bg-black border-b border-purple-500/30 px-3 py-1 flex-shrink-0">
+      {/* Content Area - Takes most space */}
+      <div className="flex-1 overflow-hidden">
+        {selectedApp ? (
+          <iframe
+            ref={iframeRef}
+            src={`/app-proxy/${sessionId}/todo`}
+            className="w-full h-full border-0 bg-white block"
+            title={`${selectedApp.name} Preview`}
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
+            loading="lazy"
+            onLoad={() => console.log('Todo app loaded successfully')}
+            onError={(e) => console.error('Failed to load todo app')}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-center">
+            <div className="text-gray-400">
+              <Globe className="h-12 w-12 mx-auto mb-3" />
+              <p className="text-sm">No running applications</p>
+              <p className="text-xs text-purple-300 mt-2">
+                Create an app with Pareng Boyong to see it here
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Controls at Bottom */}
+      <div className="bg-black border-t border-purple-500/30 px-3 py-2 flex-shrink-0">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm text-cyan-400 flex items-center font-semibold">
             <Globe className="h-4 w-4 mr-2" />
-            App Preview          </h3>
+            App Preview
+          </h3>
           <div className="flex items-center space-x-1">
             {/* Viewport Controls */}
             <Button
@@ -133,32 +160,6 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
                 </div>
               </button>
             ))}
-          </div>
-        )}
-      </div>
-
-      {/* Content Area - Minimized spacing */}
-      <div className="flex-1 flex flex-col bg-black overflow-hidden p-1 gap-1 min-h-0">
-        {selectedApp ? (
-          <iframe
-            ref={iframeRef}
-            src={`/app-proxy/${sessionId}`}
-            className="w-full h-full border-0 bg-white block"
-            title={`${selectedApp.name} Preview`}
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
-            loading="lazy"
-            onLoad={() => console.log('Todo app loaded successfully')}
-            onError={(e) => console.error('Failed to load todo app')}
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-center">
-            <div className="text-gray-400">
-              <Globe className="h-12 w-12 mx-auto mb-3" />
-              <p className="text-sm">No running applications</p>
-              <p className="text-xs text-purple-300 mt-2">
-                Create an app with Pareng Boyong to see it here
-              </p>
-            </div>
           </div>
         )}
       </div>
