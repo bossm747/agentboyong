@@ -1094,17 +1094,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: 'Knowledge imported to runtime sandbox' });
   });
 
-  // Serve todo app directly from workspace
-  app.get('/app-proxy/:sessionId/todo', async (req: Request, res: Response) => {
-    const { sessionId } = req.params;
-    const todoAppPath = `./workspace/${sessionId}/index.html`;
+  // Serve applications from workspace dynamically
+  app.get('/app-proxy/:sessionId/:appName?', async (req: Request, res: Response) => {
+    const { sessionId, appName } = req.params;
+    const fs = await import('fs');
+    const path = await import('path');
     
     try {
-      const fs = await import('fs');
-      const path = await import('path');
+      const workspaceDir = `./workspace/${sessionId}`;
+      let filePath = '';
       
-      if (fs.existsSync(todoAppPath)) {
-        const content = fs.readFileSync(todoAppPath, 'utf8');
+      if (appName) {
+        // Try specific app file first
+        filePath = path.join(workspaceDir, `${appName}.html`);
+        if (!fs.existsSync(filePath)) {
+          // Try with index.html in subfolder
+          filePath = path.join(workspaceDir, appName, 'index.html');
+        }
+      } else {
+        // Default to index.html
+        filePath = path.join(workspaceDir, 'index.html');
+      }
+      
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
         
         // Set proper headers for iframe embedding
         res.setHeader('X-Frame-Options', 'SAMEORIGIN');
@@ -1113,11 +1126,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.send(content);
       } else {
-        res.status(404).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>📋 Todo App Not Found</h1><p>The todo app hasn't been created yet. Ask Pareng Boyong to create one!</p></body></html>`);
+        res.status(404).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>📋 App Not Found</h1><p>The requested app hasn't been created yet. Ask Pareng Boyong to create it!</p></body></html>`);
       }
     } catch (error) {
-      console.error('Todo app serve error:', error);
-      res.status(500).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>🚫 Error Loading Todo App</h1><p>Error: ${error}</p></body></html>`);
+      console.error('App serve error:', error);
+      res.status(500).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>🚫 Error Loading App</h1><p>Error: ${error}</p></body></html>`);
     }
   });
 

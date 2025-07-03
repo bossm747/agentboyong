@@ -486,6 +486,9 @@ This ensures you provide accurate, up-to-date code that will actually work with 
         }
       }
 
+      // Execute any file operations mentioned in the AI response
+      await this.handleFileCreation(sessionId, message, assistantResponse);
+
       // Re-enable conversation saving now that basic chat works
       await this.saveConversation(sessionId, userId, 'assistant', assistantResponse, mode);
 
@@ -542,6 +545,305 @@ This ensures you provide accurate, up-to-date code that will actually work with 
       
       throw new Error('Failed to process AI request');
     }
+  }
+
+  // Handle file creation based on AI response and user message
+  private async handleFileCreation(sessionId: string, userMessage: string, aiResponse: string): Promise<void> {
+    try {
+      // Check if user requested website/HTML creation
+      if (userMessage.toLowerCase().includes('website') || 
+          userMessage.toLowerCase().includes('landing page') ||
+          userMessage.toLowerCase().includes('nexuspay')) {
+        
+        // Extract filename from user message or use default
+        let filename = 'index.html';
+        const nameMatch = userMessage.match(/called\s+(\w+)/i) || userMessage.match(/for\s+(\w+)/i);
+        if (nameMatch) {
+          filename = `${nameMatch[1].toLowerCase()}.html`;
+        }
+        
+        // Use file system service to create the file
+        const fileSystem = new FileSystemService(sessionId);
+        await fileSystem.ensureWorkspaceExists();
+        
+        // Generate website content
+        const htmlContent = this.generateNexusPayHTML(nameMatch ? nameMatch[1] : 'NexusPay');
+        await fileSystem.writeFile(filename, htmlContent);
+        
+        // Register application in database
+        await storage.createApplication({
+          sessionId,
+          name: nameMatch ? nameMatch[1] : 'NexusPay Website',
+          port: 8080,
+          url: `/app-proxy/${sessionId}/${filename.replace('.html', '')}`,
+          startCommand: 'static',
+          directory: `./workspace/${sessionId}`,
+          status: 'running',
+          description: 'Payment solution landing page',
+          language: 'html',
+          framework: 'static'
+        });
+        
+        console.log(`✅ Created ${filename} and registered application`);
+      }
+    } catch (error) {
+      console.error('❌ File operation execution failed:', error);
+    }
+  }
+  
+  // Generate NexusPay website HTML
+  private generateNexusPayHTML(projectName: string): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${projectName} - Next Generation Payment Solutions</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow-x: hidden;
+        }
+        .header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 20px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00f5ff 0%, #0066ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+            animation: neonGlow 2s ease-in-out infinite alternate;
+        }
+        @keyframes neonGlow {
+            from { text-shadow: 0 0 10px #00f5ff, 0 0 20px #00f5ff; }
+            to { text-shadow: 0 0 20px #00f5ff, 0 0 30px #00f5ff; }
+        }
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 245, 255, 0.1) 0%, transparent 70%);
+        }
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #fff 0%, #00f5ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: floating 3s ease-in-out infinite;
+        }
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .hero p {
+            font-size: 1.2rem;
+            color: #a0a0a0;
+            margin-bottom: 40px;
+            max-width: 600px;
+        }
+        .cta-btn {
+            background: linear-gradient(135deg, #00f5ff 0%, #0066ff 100%);
+            color: #fff;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 30px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0, 245, 255, 0.3);
+            display: inline-block;
+            margin: 10px;
+        }
+        .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 245, 255, 0.5);
+        }
+        .features {
+            padding: 100px 20px;
+            background: #111;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .features h2 {
+            text-align: center;
+            font-size: 3rem;
+            margin-bottom: 60px;
+            color: #fff;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+        .feature-card {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: #00f5ff;
+            box-shadow: 0 10px 30px rgba(0, 245, 255, 0.1);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #00f5ff;
+        }
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        .feature-card p {
+            color: #a0a0a0;
+            line-height: 1.6;
+        }
+        .stats {
+            padding: 100px 20px;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 245, 255, 0.05) 0%, transparent 70%);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            text-align: center;
+        }
+        .stat-item h3 {
+            font-size: 3rem;
+            color: #00f5ff;
+            margin-bottom: 10px;
+        }
+        .stat-item p {
+            font-size: 1.1rem;
+            color: #a0a0a0;
+        }
+        .footer {
+            background: #111;
+            padding: 50px 20px;
+            text-align: center;
+            border-top: 1px solid #333;
+            color: #a0a0a0;
+        }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .features h2 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">${projectName}</div>
+            <a href="#" class="cta-btn">Get Started</a>
+        </nav>
+    </header>
+    
+    <section class="hero">
+        <div class="container">
+            <h1>Next Generation<br>Payment Solutions</h1>
+            <p>Revolutionize your business with lightning-fast, secure, and intelligent payment processing. Join thousands of businesses already using ${projectName}.</p>
+            <a href="#" class="cta-btn">Start Free Trial</a>
+            <a href="#" class="cta-btn" style="background: transparent; border: 2px solid #00f5ff;">Watch Demo</a>
+        </div>
+    </section>
+    
+    <section class="features">
+        <div class="container">
+            <h2>Why Choose ${projectName}?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Lightning Fast</h3>
+                    <p>Process payments in milliseconds with our advanced infrastructure. No more waiting, no more delays.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🛡️</div>
+                    <h3>Bank-Grade Security</h3>
+                    <p>Your data is protected with military-grade encryption and compliance with all major security standards.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Global Reach</h3>
+                    <p>Accept payments from anywhere in the world with support for 150+ currencies and local payment methods.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Smart Analytics</h3>
+                    <p>Get real-time insights into your payments, customers, and revenue with our powerful analytics dashboard.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <h3>Easy Integration</h3>
+                    <p>Get up and running in minutes with our simple APIs and comprehensive documentation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>24/7 Support</h3>
+                    <p>Our expert support team is available around the clock to help you succeed.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="stats">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <h3>$2.5B+</h3>
+                    <p>Payment Volume Processed</p>
+                </div>
+                <div class="stat-item">
+                    <h3>50k+</h3>
+                    <p>Active Merchants</p>
+                </div>
+                <div class="stat-item">
+                    <h3>99.9%</h3>
+                    <p>Uptime Guarantee</p>
+                </div>
+                <div class="stat-item">
+                    <h3>2.1%</h3>
+                    <p>Average Processing Fee</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 ${projectName}. All rights reserved.</p>
+            <p>Built by Pareng Boyong AI for InnovateHub PH</p>
+        </div>
+    </footer>
+</body>
+</html>`;
   }
 
   private getTaskType(message: string, mode: string): string {
