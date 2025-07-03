@@ -1094,7 +1094,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: 'Knowledge imported to runtime sandbox' });
   });
 
-  // Serve applications from workspace dynamically
+  // Serve static assets for isolated projects (must come before main app route)
+  app.get('/app-proxy/:sessionId/:appName/:assetPath', async (req: Request, res: Response) => {
+    const { sessionId, appName, assetPath } = req.params;
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    try {
+      const workspaceDir = `./workspace/${sessionId}`;
+      const projectDir = path.join(workspaceDir, appName);
+      const assetFilePath = path.join(projectDir, assetPath);
+      
+      if (fs.existsSync(assetFilePath)) {
+        const content = fs.readFileSync(assetFilePath);
+        const ext = path.extname(assetPath);
+        
+        const mimeTypes: { [key: string]: string } = {
+          '.css': 'text/css',
+          '.js': 'application/javascript',
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.svg': 'image/svg+xml',
+          '.ico': 'image/x-icon'
+        };
+        
+        res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+        res.send(content);
+      } else {
+        res.status(404).send('Asset not found');
+      }
+    } catch (error) {
+      console.error('Asset serve error:', error);
+      res.status(500).send('Error loading asset');
+    }
+  });
+
+  // Serve applications from workspace dynamically (with project isolation support)
   app.get('/app-proxy/:sessionId/:appName?', async (req: Request, res: Response) => {
     const { sessionId, appName } = req.params;
     const fs = await import('fs');
@@ -1105,14 +1142,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let filePath = '';
       
       if (appName) {
-        // Try specific app file first
-        filePath = path.join(workspaceDir, `${appName}.html`);
-        if (!fs.existsSync(filePath)) {
-          // Try with index.html in subfolder
+        // Priority 1: Check if appName is a project directory (new isolated projects)
+        const projectDir = path.join(workspaceDir, appName);
+        const projectIndexPath = path.join(projectDir, 'index.html');
+        
+        if (fs.existsSync(projectIndexPath)) {
+          // Found isolated project directory with index.html
+          filePath = projectIndexPath;
+        } else if (fs.existsSync(path.join(workspaceDir, `${appName}.html`))) {
+          // Priority 2: Legacy - specific app file in main workspace
+          filePath = path.join(workspaceDir, `${appName}.html`);
+        } else {
+          // Priority 3: Try appName as subdirectory (old format)
           filePath = path.join(workspaceDir, appName, 'index.html');
         }
       } else {
-        // Default to index.html
+        // Default to main workspace index.html
         filePath = path.join(workspaceDir, 'index.html');
       }
       
@@ -1126,13 +1171,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.send(content);
       } else {
-        res.status(404).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>📋 App Not Found</h1><p>The requested app hasn't been created yet. Ask Pareng Boyong to create it!</p></body></html>`);
+        res.status(404).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>📋 App Not Found</h1><p>The requested app "${appName || 'default'}" hasn't been created yet. Ask Pareng Boyong to create it!</p><p><strong>Tip:</strong> Projects are now isolated in separate folders for better organization.</p></body></html>`);
       }
     } catch (error) {
       console.error('App serve error:', error);
       res.status(500).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>🚫 Error Loading App</h1><p>Error: ${error}</p></body></html>`);
     }
   });
+
+
 
   return httpServer;
 }

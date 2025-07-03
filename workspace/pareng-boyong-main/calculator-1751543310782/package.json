@@ -1,0 +1,9 @@
+{
+  "name": "calculator-app",
+  "version": "1.0.0",
+  "description": "Calculator App by Pareng Boyong",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8081"
+  }
+}
