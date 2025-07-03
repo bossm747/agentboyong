@@ -69,9 +69,9 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-black overflow-hidden lg:relative mobile-webview-container">
+    <div className="w-full h-full flex flex-col bg-black overflow-hidden">
       {/* Header - Minimal height */}
-      <div className="bg-black border-b border-purple-500/30 px-3 py-2 flex-shrink-0 mobile-webview-header">
+      <div className="bg-black border-b border-purple-500/30 px-3 py-1 flex-shrink-0">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm text-cyan-400 flex items-center font-semibold">
             <Globe className="h-4 w-4 mr-2" />
@@ -139,12 +139,12 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
       </div>
 
       {/* Content Area - Takes remaining space */}
-      <div className="flex-1 relative overflow-hidden mobile-webview-content">
+      <div className="flex-1 overflow-hidden">
         {selectedApp ? (
           <iframe
             ref={iframeRef}
             src={`/app-proxy/${sessionId}/todo`}
-            className="w-full h-full border-0 bg-white mobile-webview-iframe"
+            className="w-full h-full border-0 bg-white block"
             title={`${selectedApp.name} Preview`}
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
             loading="lazy"
