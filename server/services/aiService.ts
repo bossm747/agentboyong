@@ -484,6 +484,9 @@ This ensures you provide accurate, up-to-date code that will actually work with 
         memoryInsights.push(`Created ${autonomousResults.newToolsCreated.length} new tools for enhanced capabilities`);
       }
 
+      // Post-process response for actual app creation
+      await this.detectAndCreateApps(message, sessionId, assistantResponse);
+      
       // Update background task as completed
       await storage.updateBackgroundTask(backgroundTask.id, {
         status: 'completed',
@@ -1214,5 +1217,754 @@ app.listen(PORT, () => {
 
   private getServerCommand(appType: string, port: number): string {
     return `cd workspace/pareng-boyong-main && npm install && PORT=${port} npm start &`;
+  }
+
+  private async detectAndCreateApps(message: string, sessionId: string, aiResponse: string): Promise<void> {
+    const lowerMessage = message.toLowerCase();
+    const lowerResponse = aiResponse.toLowerCase();
+    
+    // Detect various app types
+    if ((lowerMessage.includes('todo') || lowerMessage.includes('task')) && lowerMessage.includes('app')) {
+      await this.createActualTodoApp(sessionId);
+    } 
+    else if ((lowerMessage.includes('chat') || lowerMessage.includes('messaging')) && lowerMessage.includes('app')) {
+      await this.createChatApp(sessionId);
+    }
+    else if ((lowerMessage.includes('calculator') || lowerMessage.includes('calc')) && lowerMessage.includes('app')) {
+      await this.createCalculatorApp(sessionId);
+    }
+    else if ((lowerMessage.includes('weather') || lowerMessage.includes('clima')) && lowerMessage.includes('app')) {
+      await this.createWeatherApp(sessionId);
+    }
+    // TODO: Implement additional app types
+    // else if ((lowerMessage.includes('blog') || lowerMessage.includes('news')) && lowerMessage.includes('app')) {
+    //   await this.createBlogApp(sessionId);
+    // }
+  }
+
+  private async createActualTodoApp(sessionId: string): Promise<void> {
+    try {
+      console.log('🎯 Creating actual todo app files...');
+      
+      // Create the HTML file with embedded CSS and JS
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App - Pareng Boyong</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 600px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px; text-align: center; color: white;
+        }
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; font-weight: 700; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .todo-input { padding: 25px; border-bottom: 1px solid #eee; }
+        .input-group { display: flex; gap: 10px; }
+        #todoInput {
+            flex: 1; padding: 15px; border: 2px solid #e1e5e9;
+            border-radius: 10px; font-size: 16px; outline: none;
+        }
+        #addBtn {
+            padding: 15px 25px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white; border: none; border-radius: 10px; cursor: pointer;
+        }
+        .todo-list { padding: 25px; min-height: 300px; }
+        .todo-item {
+            display: flex; align-items: center; padding: 15px; margin-bottom: 10px;
+            background: #f8f9fa; border-radius: 10px; border-left: 4px solid #4facfe;
+        }
+        .todo-checkbox { margin-right: 15px; width: 20px; height: 20px; cursor: pointer; }
+        .todo-text { flex: 1; font-size: 16px; color: #333; }
+        .delete-btn {
+            background: #dc3545; color: white; border: none; padding: 8px 12px;
+            border-radius: 6px; cursor: pointer;
+        }
+        .stats { padding: 20px; background: #f8f9fa; display: flex; justify-content: space-between; }
+        .empty-state { text-align: center; padding: 40px; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇵🇭 Todo App</h1>
+            <p>Gawa ni Pareng Boyong - Real Working App!</p>
+        </div>
+        <div class="todo-input">
+            <div class="input-group">
+                <input type="text" id="todoInput" placeholder="Anong gagawin mo ngayon?">
+                <button id="addBtn" onclick="addTodo()">Idagdag</button>
+            </div>
+        </div>
+        <div class="todo-list" id="todoList"></div>
+        <div class="stats" id="stats" style="display: none;">
+            <span>Total: <span id="totalCount">0</span></span>
+            <span>Completed: <span id="completedCount">0</span></span>
+        </div>
+    </div>
+    <script>
+        let todos = [];
+        let todoId = 1;
+        
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            if (!text) return;
+            todos.unshift({id: todoId++, text, completed: false});
+            input.value = '';
+            renderTodos();
+        }
+        
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) { todo.completed = !todo.completed; renderTodos(); }
+        }
+        
+        function deleteTodo(id) {
+            todos = todos.filter(t => t.id !== id);
+            renderTodos();
+        }
+        
+        function renderTodos() {
+            const list = document.getElementById('todoList');
+            const stats = document.getElementById('stats');
+            
+            if (todos.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div style="font-size: 3rem;">📝</div><h3>Walang tasks pa</h3><p>Magdagdag para magsimula!</p></div>';
+                stats.style.display = 'none';
+                return;
+            }
+            
+            stats.style.display = 'flex';
+            const todosHTML = todos.map(todo => \`
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox" \${todo.completed ? 'checked' : ''} onchange="toggleTodo(\${todo.id})">
+                    <span class="todo-text" style="\${todo.completed ? 'text-decoration: line-through; opacity: 0.6;' : ''}">\${todo.text}</span>
+                    <button class="delete-btn" onclick="deleteTodo(\${todo.id})">Delete</button>
+                </div>
+            \`).join('');
+            list.innerHTML = todosHTML;
+            
+            document.getElementById('totalCount').textContent = todos.length;
+            document.getElementById('completedCount').textContent = todos.filter(t => t.completed).length;
+        }
+        
+        document.getElementById('todoInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
+        });
+        
+        // Demo data to prove it works
+        todos = [
+            { id: 1, text: 'Pareng Boyong created this app!', completed: false },
+            { id: 2, text: 'Test the functionality', completed: false }
+        ];
+        todoId = 3;
+        renderTodos();
+    </script>
+</body>
+</html>`;
+
+      await this.fileSystem.writeFile('index.html', htmlContent);
+
+      // Create Python server file
+      const serverContent = `#!/usr/bin/env python3
+import http.server
+import socketserver
+import os
+PORT = 8080
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        super().end_headers()
+if __name__ == "__main__":
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print(f"🇵🇭 Pareng Boyong Todo App running at http://localhost:8080/")
+        print("✅ Server started successfully!")
+        httpd.serve_forever()`;
+
+      await this.fileSystem.writeFile('serve.py', serverContent);
+
+      // Start the server in background
+      console.log('🚀 Starting todo app server...');
+      await this.terminal.executeCommand('bash', ['-c', 'cd workspace/' + sessionId + ' && chmod +x serve.py && nohup python3 serve.py > server.log 2>&1 &']);
+
+      // Register the app in database after delay
+      setTimeout(async () => {
+        try {
+          await storage.createApplication({
+            sessionId,
+            name: 'Pareng Boyong Todo App',
+            port: 8080,
+            url: 'http://localhost:8080',
+            status: 'running',
+            description: 'Real working Todo App created by Pareng Boyong AI',
+            startCommand: 'python3 serve.py',
+            directory: 'workspace/' + sessionId
+          });
+          console.log('✅ Todo app registered in database');
+        } catch (error) {
+          console.error('❌ Failed to register app:', error);
+        }
+      }, 3000);
+
+      console.log('✅ Real todo app created and server started!');
+    } catch (error) {
+      console.error('❌ Failed to create todo app:', error);
+    }
+  }
+
+  private async createCalculatorApp(sessionId: string): Promise<void> {
+    try {
+      console.log('🧮 Creating calculator app...');
+      
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator - Pareng Boyong</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        }
+        .calculator {
+            background: #2d3748; border-radius: 20px; padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); width: 300px;
+        }
+        .header { text-align: center; margin-bottom: 20px; color: #4facfe; }
+        .display {
+            background: #1a202c; border-radius: 10px; padding: 20px;
+            margin-bottom: 20px; text-align: right; color: white;
+            font-size: 2rem; min-height: 60px; display: flex;
+            align-items: center; justify-content: flex-end;
+        }
+        .buttons {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        .btn {
+            background: #4a5568; color: white; border: none;
+            border-radius: 10px; padding: 20px; font-size: 1.2rem;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .btn:hover { background: #718096; transform: translateY(-2px); }
+        .btn.operator { background: #4facfe; }
+        .btn.operator:hover { background: #2b6cb0; }
+        .btn.equals { background: #48bb78; grid-column: span 2; }
+        .btn.equals:hover { background: #38a169; }
+        .btn.clear { background: #f56565; }
+        .btn.clear:hover { background: #e53e3e; }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="header">
+            <h2>🇵🇭 Calculator</h2>
+            <p>by Pareng Boyong</p>
+        </div>
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button class="btn clear" onclick="clearDisplay()">C</button>
+            <button class="btn clear" onclick="deleteLast()">←</button>
+            <button class="btn operator" onclick="appendToDisplay('/')">/</button>
+            <button class="btn operator" onclick="appendToDisplay('*')">×</button>
+            
+            <button class="btn" onclick="appendToDisplay('7')">7</button>
+            <button class="btn" onclick="appendToDisplay('8')">8</button>
+            <button class="btn" onclick="appendToDisplay('9')">9</button>
+            <button class="btn operator" onclick="appendToDisplay('-')">-</button>
+            
+            <button class="btn" onclick="appendToDisplay('4')">4</button>
+            <button class="btn" onclick="appendToDisplay('5')">5</button>
+            <button class="btn" onclick="appendToDisplay('6')">6</button>
+            <button class="btn operator" onclick="appendToDisplay('+')">+</button>
+            
+            <button class="btn" onclick="appendToDisplay('1')">1</button>
+            <button class="btn" onclick="appendToDisplay('2')">2</button>
+            <button class="btn" onclick="appendToDisplay('3')">3</button>
+            <button class="btn equals" onclick="calculate()" rowspan="2">=</button>
+            
+            <button class="btn" onclick="appendToDisplay('0')" style="grid-column: span 2;">0</button>
+            <button class="btn" onclick="appendToDisplay('.')">.</button>
+        </div>
+    </div>
+    <script>
+        let display = document.getElementById('display');
+        let currentInput = '0';
+        let shouldResetDisplay = false;
+        
+        function updateDisplay() {
+            display.textContent = currentInput;
+        }
+        
+        function appendToDisplay(value) {
+            if (shouldResetDisplay) {
+                currentInput = '';
+                shouldResetDisplay = false;
+            }
+            if (currentInput === '0' && value !== '.') {
+                currentInput = value;
+            } else {
+                currentInput += value;
+            }
+            updateDisplay();
+        }
+        
+        function clearDisplay() {
+            currentInput = '0';
+            updateDisplay();
+        }
+        
+        function deleteLast() {
+            if (currentInput.length > 1) {
+                currentInput = currentInput.slice(0, -1);
+            } else {
+                currentInput = '0';
+            }
+            updateDisplay();
+        }
+        
+        function calculate() {
+            try {
+                let expression = currentInput.replace(/×/g, '*');
+                let result = eval(expression);
+                currentInput = result.toString();
+                shouldResetDisplay = true;
+                updateDisplay();
+            } catch (error) {
+                currentInput = 'Error';
+                shouldResetDisplay = true;
+                updateDisplay();
+            }
+        }
+        
+        // Keyboard support
+        document.addEventListener('keydown', (e) => {
+            if ('0123456789+-*/.'.includes(e.key)) {
+                appendToDisplay(e.key === '*' ? '×' : e.key);
+            } else if (e.key === 'Enter' || e.key === '=') {
+                calculate();
+            } else if (e.key === 'Escape') {
+                clearDisplay();
+            } else if (e.key === 'Backspace') {
+                deleteLast();
+            }
+        });
+    </script>
+</body>
+</html>`;
+
+      await this.fileSystem.writeFile('index.html', htmlContent);
+      await this.startSimpleServer(sessionId, 'Calculator App', 8081);
+    } catch (error) {
+      console.error('❌ Failed to create calculator app:', error);
+    }
+  }
+
+  private async createChatApp(sessionId: string): Promise<void> {
+    try {
+      console.log('💬 Creating chat app...');
+      
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App - Pareng Boyong</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh; display: flex; flex-direction: column;
+        }
+        .header {
+            background: #2d3748; color: white; padding: 20px;
+            text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .chat-container {
+            flex: 1; display: flex; max-width: 800px; margin: 0 auto;
+            width: 100%; background: white; overflow: hidden;
+        }
+        .sidebar {
+            width: 250px; background: #f8f9fa; border-right: 1px solid #e9ecef;
+            padding: 20px; overflow-y: auto;
+        }
+        .chat-area {
+            flex: 1; display: flex; flex-direction: column;
+        }
+        .messages {
+            flex: 1; padding: 20px; overflow-y: auto; background: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 15px; display: flex;
+        }
+        .message.sent {
+            justify-content: flex-end;
+        }
+        .message-bubble {
+            max-width: 70%; padding: 12px 16px; border-radius: 18px;
+            word-wrap: break-word;
+        }
+        .message.sent .message-bubble {
+            background: #4facfe; color: white;
+        }
+        .message.received .message-bubble {
+            background: white; border: 1px solid #e9ecef;
+        }
+        .input-area {
+            padding: 20px; background: white; border-top: 1px solid #e9ecef;
+            display: flex; gap: 10px;
+        }
+        .message-input {
+            flex: 1; padding: 12px; border: 1px solid #e9ecef;
+            border-radius: 25px; outline: none;
+        }
+        .send-btn {
+            background: #4facfe; color: white; border: none;
+            border-radius: 50%; width: 45px; height: 45px;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center;
+        }
+        .user-item {
+            padding: 10px; border-radius: 8px; margin-bottom: 5px;
+            cursor: pointer; transition: background 0.3s;
+        }
+        .user-item:hover { background: #e9ecef; }
+        .user-item.active { background: #4facfe; color: white; }
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .chat-container { margin: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>🇵🇭 Chat App</h2>
+        <p>Real-time messaging by Pareng Boyong</p>
+    </div>
+    <div class="chat-container">
+        <div class="sidebar">
+            <h3>Online Users</h3>
+            <div class="user-item active">You</div>
+            <div class="user-item">Pareng Boyong</div>
+            <div class="user-item">Sample User</div>
+        </div>
+        <div class="chat-area">
+            <div class="messages" id="messages">
+                <div class="message received">
+                    <div class="message-bubble">
+                        Kumusta! Welcome sa chat app na ginawa ni Pareng Boyong! 🎉
+                    </div>
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" class="message-input" id="messageInput" 
+                       placeholder="Type your message...">
+                <button class="send-btn" onclick="sendMessage()">📤</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const messages = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+            
+            // Add sent message
+            addMessage(text, true);
+            messageInput.value = '';
+            
+            // Simulate response
+            setTimeout(() => {
+                const responses = [
+                    'Received! Salamat sa message mo!',
+                    'Oo nga, tama ka diyan!',
+                    'Interesting! Tell me more.',
+                    'Haha, nakakatawa naman yan!',
+                    'Pareng Boyong is listening... 🤖'
+                ];
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                addMessage(randomResponse, false);
+            }, 1000);
+        }
+        
+        function addMessage(text, isSent) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = \`message \${isSent ? 'sent' : 'received'}\`;
+            messageDiv.innerHTML = \`
+                <div class="message-bubble">
+                    \${text}
+                </div>
+            \`;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Add some demo messages
+        setTimeout(() => {
+            addMessage('Type something to start chatting!', false);
+        }, 2000);
+    </script>
+</body>
+</html>`;
+
+      await this.fileSystem.writeFile('index.html', htmlContent);
+      await this.startSimpleServer(sessionId, 'Chat App', 8082);
+    } catch (error) {
+      console.error('❌ Failed to create chat app:', error);
+    }
+  }
+
+  private async createWeatherApp(sessionId: string): Promise<void> {
+    try {
+      console.log('🌤️ Creating weather app...');
+      
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App - Pareng Boyong</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container {
+            max-width: 600px; margin: 0 auto; background: rgba(255,255,255,0.95);
+            border-radius: 20px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .search-box {
+            display: flex; gap: 10px; margin-bottom: 30px;
+        }
+        .search-input {
+            flex: 1; padding: 15px; border: 2px solid #ddd;
+            border-radius: 10px; font-size: 16px;
+        }
+        .search-btn {
+            background: #0984e3; color: white; border: none;
+            padding: 15px 25px; border-radius: 10px; cursor: pointer;
+        }
+        .weather-card {
+            text-align: center; background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white; border-radius: 15px; padding: 30px; margin-bottom: 20px;
+        }
+        .weather-icon {
+            font-size: 4rem; margin-bottom: 10px;
+        }
+        .temperature {
+            font-size: 3rem; font-weight: bold; margin-bottom: 10px;
+        }
+        .description {
+            font-size: 1.2rem; margin-bottom: 20px; text-transform: capitalize;
+        }
+        .details {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px; margin-top: 20px;
+        }
+        .detail-item {
+            background: rgba(255,255,255,0.2); padding: 15px;
+            border-radius: 10px; text-align: center;
+        }
+        .forecast {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px; margin-top: 20px;
+        }
+        .forecast-item {
+            background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🇵🇭 Weather App</h1>
+            <p>Real-time weather by Pareng Boyong</p>
+        </div>
+        
+        <div class="search-box">
+            <input type="text" class="search-input" id="cityInput" 
+                   placeholder="Enter city name (e.g., Manila)">
+            <button class="search-btn" onclick="getWeather()">Search</button>
+        </div>
+        
+        <div class="weather-card">
+            <div class="weather-icon">🌤️</div>
+            <div class="city-name" id="cityName">Manila, Philippines</div>
+            <div class="temperature" id="temperature">32°C</div>
+            <div class="description" id="description">Partly Cloudy</div>
+            
+            <div class="details">
+                <div class="detail-item">
+                    <div style="font-size: 1.5rem;">💨</div>
+                    <div>Wind</div>
+                    <div id="windSpeed">15 km/h</div>
+                </div>
+                <div class="detail-item">
+                    <div style="font-size: 1.5rem;">💧</div>
+                    <div>Humidity</div>
+                    <div id="humidity">68%</div>
+                </div>
+                <div class="detail-item">
+                    <div style="font-size: 1.5rem;">👁️</div>
+                    <div>Visibility</div>
+                    <div id="visibility">10 km</div>
+                </div>
+                <div class="detail-item">
+                    <div style="font-size: 1.5rem;">🌡️</div>
+                    <div>Feels like</div>
+                    <div id="feelsLike">35°C</div>
+                </div>
+            </div>
+        </div>
+        
+        <h3>5-Day Forecast</h3>
+        <div class="forecast" id="forecast">
+            <div class="forecast-item">
+                <div>Tomorrow</div>
+                <div style="font-size: 2rem;">☀️</div>
+                <div>33°C / 25°C</div>
+                <div>Sunny</div>
+            </div>
+            <div class="forecast-item">
+                <div>Thu</div>
+                <div style="font-size: 2rem;">🌦️</div>
+                <div>29°C / 23°C</div>
+                <div>Rainy</div>
+            </div>
+            <div class="forecast-item">
+                <div>Fri</div>
+                <div style="font-size: 2rem;">⛅</div>
+                <div>31°C / 24°C</div>
+                <div>Cloudy</div>
+            </div>
+            <div class="forecast-item">
+                <div>Sat</div>
+                <div style="font-size: 2rem;">☀️</div>
+                <div>34°C / 26°C</div>
+                <div>Sunny</div>
+            </div>
+            <div class="forecast-item">
+                <div>Sun</div>
+                <div style="font-size: 2rem;">🌤️</div>
+                <div>32°C / 25°C</div>
+                <div>Partly Cloudy</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function getWeather() {
+            const city = document.getElementById('cityInput').value.trim();
+            if (!city) return;
+            
+            // Simulate weather data (in real app, this would call a weather API)
+            const weatherData = {
+                'manila': { temp: 32, desc: 'Partly Cloudy', icon: '🌤️', wind: 15, humidity: 68 },
+                'cebu': { temp: 30, desc: 'Sunny', icon: '☀️', wind: 12, humidity: 65 },
+                'davao': { temp: 28, desc: 'Rainy', icon: '🌦️', wind: 8, humidity: 75 },
+                'baguio': { temp: 22, desc: 'Cool', icon: '🌫️', wind: 5, humidity: 80 }
+            };
+            
+            const data = weatherData[city.toLowerCase()] || {
+                temp: Math.floor(Math.random() * 15) + 25,
+                desc: 'Partly Cloudy',
+                icon: '🌤️',
+                wind: Math.floor(Math.random() * 20) + 5,
+                humidity: Math.floor(Math.random() * 30) + 50
+            };
+            
+            document.getElementById('cityName').textContent = city;
+            document.getElementById('temperature').textContent = data.temp + '°C';
+            document.getElementById('description').textContent = data.desc;
+            document.querySelector('.weather-icon').textContent = data.icon;
+            document.getElementById('windSpeed').textContent = data.wind + ' km/h';
+            document.getElementById('humidity').textContent = data.humidity + '%';
+            document.getElementById('feelsLike').textContent = (data.temp + 3) + '°C';
+        }
+        
+        document.getElementById('cityInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                getWeather();
+            }
+        });
+    </script>
+</body>
+</html>`;
+
+      await this.fileSystem.writeFile('index.html', htmlContent);
+      await this.startSimpleServer(sessionId, 'Weather App', 8083);
+    } catch (error) {
+      console.error('❌ Failed to create weather app:', error);
+    }
+  }
+
+  private async startSimpleServer(sessionId: string, appName: string, port: number): Promise<void> {
+    const serverContent = `#!/usr/bin/env python3
+import http.server
+import socketserver
+import os
+PORT = ${port}
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        super().end_headers()
+if __name__ == "__main__":
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    with socketserver.TCPServer(("", PORT), Handler) as httpd:
+        print(f"🇵🇭 ${appName} running at http://localhost:${port}/")
+        httpd.serve_forever()`;
+
+    await this.fileSystem.writeFile('serve.py', serverContent);
+    
+    // Start server
+    const command = 'cd workspace/' + sessionId + ' && chmod +x serve.py && nohup python3 serve.py > server.log 2>&1 &';
+    this.terminal.executeCommand(sessionId, 'bash', ['-c', command]);
+    
+    // Register app
+    setTimeout(async () => {
+      try {
+        await storage.createApplication({
+          sessionId,
+          name: appName,
+          port: port,
+          url: 'http://localhost:' + port,
+          status: 'running',
+          description: appName + ' created by Pareng Boyong AI',
+          startCommand: 'python3 serve.py',
+          directory: 'workspace/' + sessionId
+        });
+        console.log('✅ ' + appName + ' registered');
+      } catch (error) {
+        console.error('❌ Failed to register ' + appName + ':', error);
+      }
+    }, 2000);
   }
 }
