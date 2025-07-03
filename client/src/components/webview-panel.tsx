@@ -142,7 +142,7 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
         {selectedApp ? (
           <iframe
             ref={iframeRef}
-            src={`/app-proxy/${sessionId}/todo`}
+            src={`/app-proxy/${sessionId}`}
             className="w-full h-full border-0 bg-white block"
             title={`${selectedApp.name} Preview`}
             sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
