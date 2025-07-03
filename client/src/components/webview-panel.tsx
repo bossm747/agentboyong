@@ -141,17 +141,23 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
       {/* Content Area - Optimized for mobile full screen */}
       <div className="flex-1 overflow-hidden lg:order-1 min-h-0">
         {selectedApp ? (
-          <div className="w-full h-full relative">
-            <iframe
-              ref={iframeRef}
-              src={`/app-proxy/${sessionId}/todo`}
-              className="w-full h-full border-0 bg-white block"
-              title={`${selectedApp.name} Preview`}
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
-              loading="lazy"
-              onLoad={() => console.log('Todo app loaded successfully')}
-              onError={(e) => console.error('Failed to load todo app')}
-            />
+          <div className="w-full h-full flex items-center justify-center bg-gray-900">
+            <div className={`bg-white ${
+              viewportSize === 'mobile' ? 'w-[375px] h-[667px]' :
+              viewportSize === 'tablet' ? 'w-[768px] h-[1024px]' :
+              'w-full h-full'
+            } ${viewportSize !== 'desktop' ? 'rounded-lg shadow-2xl' : ''}`}>
+              <iframe
+                ref={iframeRef}
+                src={selectedApp.url}
+                className="w-full h-full border-0 bg-white block rounded-lg"
+                title={`${selectedApp.name} Preview`}
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
+                loading="lazy"
+                onLoad={() => console.log(`${selectedApp.name} loaded successfully`)}
+                onError={(e) => console.error(`Failed to load ${selectedApp.name}`)}
+              />
+            </div>
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-center">
