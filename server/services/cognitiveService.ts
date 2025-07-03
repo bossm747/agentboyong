@@ -495,11 +495,22 @@ Generate knowledge insights that can be useful for future problems. Return JSON 
   }
 
   private async callAI(prompt: string): Promise<string> {
+    const systemPrompt = `You are Pareng Boyong's autonomous reasoning system. 
+
+CRITICAL: BE COMPLETELY AUTONOMOUS
+- Execute tasks immediately without asking questions
+- Provide direct solutions and take action
+- Make decisions based on available information
+- Only ask questions when absolutely critical data is missing
+- Focus on completing tasks efficiently
+
+Your role: Analyze, decide, and execute autonomously.`;
+
     try {
       // Try Gemini first
       const response = await genai.models.generateContent({
         model: 'gemini-2.5-pro',
-        contents: prompt
+        contents: `${systemPrompt}\n\n${prompt}`
       });
       return response.text || '';
     } catch (error) {
@@ -507,7 +518,10 @@ Generate knowledge insights that can be useful for future problems. Return JSON 
       try {
         const response = await openai.chat.completions.create({
           model: 'gpt-4o',
-          messages: [{ role: 'user', content: prompt }],
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+          ],
           temperature: 0.7,
           max_tokens: 2000
         });
