@@ -7,13 +7,19 @@ import { db } from '../db';
 import { 
   conversations, 
   memories, 
-  knowledge, 
+  knowledge,
+  sessions,
+  users,
   type InsertConversation, 
   type InsertMemory, 
   type InsertKnowledge,
+  type InsertSession,
+  type InsertUser,
   type Conversation,
   type Memory,
-  type Knowledge
+  type Knowledge,
+  type Session,
+  type User
 } from '@shared/schema';
 import { eq, desc, and, gte } from 'drizzle-orm';
 
@@ -46,13 +52,14 @@ export interface MemoryContext {
 export class AIService {
   private fileSystem: FileSystemService;
   private terminal: TerminalService;
-  private cognitive: CognitiveService;
+  private cognitive?: CognitiveService;
   private conversationHistory: Map<string, AIMessage[]> = new Map();
 
   constructor(sessionId: string) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
-    this.cognitive = new CognitiveService(sessionId);
+    // Temporarily disable cognitive service to fix hanging issue
+    // this.cognitive = new CognitiveService(sessionId);
   }
 
   // Memory Management Methods
@@ -128,7 +135,15 @@ Only include genuinely important information worth remembering. Return empty arr
 
       if (response.success) {
         try {
-          const extractedMemories = JSON.parse(response.content);
+          // Clean up response (remove markdown code blocks if present)
+          let cleanContent = response.content.trim();
+          if (cleanContent.startsWith('```json')) {
+            cleanContent = cleanContent.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          } else if (cleanContent.startsWith('```')) {
+            cleanContent = cleanContent.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          const extractedMemories = JSON.parse(cleanContent);
           
           for (const memory of extractedMemories) {
             if (memory.category && memory.key && memory.value && memory.importance) {
@@ -221,15 +236,18 @@ Only include genuinely important information worth remembering. Return empty arr
 
   async processMessage(sessionId: string, message: string, mode: string = 'default', userId: string = 'default_user'): Promise<AIResponse> {
     try {
-      // Load persistent memory context
+      // Re-enable memory context loading now that basic functionality works
       const memoryContext = await this.loadMemoryContext(userId, sessionId);
       
-      // Save user message to database
+      // Re-enable conversation saving now that basic chat works
       await this.saveConversation(sessionId, userId, 'user', message, mode);
 
-      // Check if this requires autonomous problem-solving
-      let requiresAutonomousReasoning = await this.shouldUseAutonomousReasoning(message, mode);
+      console.log('🧪 Starting AI processing...');
       
+      // Check if this requires autonomous problem-solving (temporarily disabled for debugging)
+      let requiresAutonomousReasoning = false; // await this.shouldUseAutonomousReasoning(message, mode);
+      
+      console.log('🔄 Variables initialized...');
       let assistantResponse = '';
       let modelUsed = '';
       let usedFallback = false;
@@ -240,7 +258,11 @@ Only include genuinely important information worth remembering. Return empty arr
         
         try {
           // Use cognitive service for autonomous problem-solving
-          autonomousResults = await this.cognitive.autonomousReasoningProcess(userId, sessionId, message);
+          if (this.cognitive) {
+            autonomousResults = await this.cognitive.autonomousReasoningProcess(userId, sessionId, message);
+          } else {
+            throw new Error('Cognitive service not available');
+          }
           
           assistantResponse = `🧠 **Autonomous Problem-Solving Activated**
 
@@ -248,15 +270,15 @@ Only include genuinely important information worth remembering. Return empty arr
 ${autonomousResults.solution}
 
 **Cognitive Process:**
-• Generated ${autonomousResults.reasoning.thoughtProcess ? Object.keys(autonomousResults.reasoning.thoughtProcess).length : 0} reasoning steps
-• Used ${autonomousResults.reasoning.toolsSelected.length} tools: ${autonomousResults.reasoning.toolsSelected.join(', ')}
-• Created ${autonomousResults.newToolsCreated.length} new tools
+• Generated ${autonomousResults.reasoning?.thoughtProcess ? Object.keys(autonomousResults.reasoning.thoughtProcess).length : 0} reasoning steps
+• Used ${autonomousResults.reasoning?.toolsSelected?.length || 0} tools: ${autonomousResults.reasoning?.toolsSelected?.join(', ') || 'none'}
+• Created ${autonomousResults.newToolsCreated?.length || 0} new tools
 
 **New Capabilities Gained:**
-${autonomousResults.newToolsCreated.map(tool => `• ${tool.name}: ${tool.description}`).join('\n')}
+${autonomousResults.newToolsCreated?.map(tool => `• ${tool.name}: ${tool.description}`).join('\n') || 'None created this session'}
 
 **Experience Learned:**
-${autonomousResults.experienceGained ? autonomousResults.experienceGained.learningInsights : 'Continuing to learn from this interaction'}
+${autonomousResults.experienceGained?.learningInsights || 'Continuing to learn from this interaction'}
 
 This autonomous reasoning session has enhanced my capabilities and problem-solving abilities!`;
 
@@ -284,33 +306,26 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
           }
         ];
 
-        // Try Gemini 2.5 Pro first
-        const geminiResponse = await this.tryGemini(history);
-        if (geminiResponse.success) {
-          assistantResponse = geminiResponse.content;
-          modelUsed = 'gemini-2.5-pro';
-          usedFallback = false;
-        } else {
-          console.log('Gemini failed, falling back to OpenAI...');
-          
-          // Fallback to OpenAI
-          const completion = await openai.chat.completions.create({
-            model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-            messages: history,
-            temperature: 0.7,
-            max_tokens: 2000
-          });
+        // Skip Gemini temporarily and use OpenAI directly for debugging
+        console.log('🔥 Using OpenAI (Gemini temporarily disabled)...');
+        
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          messages: history,
+          temperature: 0.7,
+          max_tokens: 2000
+        });
 
-          assistantResponse = completion.choices[0].message.content || '';
-          modelUsed = 'gpt-4o';
-          usedFallback = true;
-        }
+        console.log('✅ OpenAI succeeded');
+        assistantResponse = completion.choices[0].message.content || '';
+        modelUsed = 'gpt-4o';
+        usedFallback = true;
       }
 
-      // Save assistant response to database
+      // Re-enable conversation saving now that basic chat works
       await this.saveConversation(sessionId, userId, 'assistant', assistantResponse, mode);
 
-      // Extract and save memories for future reference (async, don't block response)
+      // Re-enable memory extraction now that JSON parsing is fixed
       this.extractAndSaveMemories(userId, message, assistantResponse).catch(err => 
         console.log('Background memory extraction failed:', err)
       );

@@ -12,9 +12,48 @@ import { AgentContextManager } from './agent-zero/context';
 import { AgentProcessor } from './agent-zero/agent-processor';
 import { systemMonitor } from "./services/systemMonitor";
 import { AIService } from "./services/aiService";
-import { insertFileSchema, insertEnvironmentVariableSchema } from "@shared/schema";
+import { insertFileSchema, insertEnvironmentVariableSchema, users, sessions } from "@shared/schema";
+import { db } from './db';
+import { eq } from 'drizzle-orm';
 
 const upload = multer({ dest: 'uploads/' });
+
+// Helper function to ensure Pareng Boyong session exists
+async function ensureParengBoyongSession(sessionId: string, userId: string): Promise<void> {
+  try {
+    // Convert userId to number, default to 1 if invalid
+    let userIdInt = 1;
+    try {
+      userIdInt = parseInt(userId) || 1;
+    } catch {
+      userIdInt = 1;
+    }
+
+    // Check if user exists, create if not
+    const existingUser = await db.select().from(users).where(eq(users.id, userIdInt)).limit(1);
+    
+    if (existingUser.length === 0) {
+      await db.insert(users).values({
+        username: `user_${userIdInt}`,
+        password: 'temp_hash'
+      });
+    }
+
+    // Check if session exists, create if not
+    const existingSession = await db.select().from(sessions).where(eq(sessions.id, sessionId)).limit(1);
+    
+    if (existingSession.length === 0) {
+      await db.insert(sessions).values({
+        id: sessionId,
+        userId: userIdInt,
+        lastActivity: new Date()
+      });
+    }
+  } catch (error) {
+    console.error('Error ensuring Pareng Boyong session:', error);
+    // Don't throw, let the request continue
+  }
+}
 
 // Helper function to sync project files to database
 async function syncProjectToDatabase(sessionId: string, projectPath: string): Promise<void> {
@@ -482,15 +521,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Real AI Chat endpoint for Pareng Boyong
   app.post('/api/pareng-boyong/chat', async (req: Request, res: Response) => {
     try {
-      const { message, mode = 'default', sessionId = 'main', userId = 'default_user' } = req.body;
+      console.log('🇵🇭 Pareng Boyong chat request received:', req.body);
+      const { message, mode = 'default', sessionId = 'pareng-boyong-main', userId = 'default_user' } = req.body;
 
       if (!message) {
         return res.status(400).json({ error: 'Message is required' });
       }
 
+      console.log('🔧 Ensuring session exists...');
+      // Re-enable session creation now that basic chat works
+      await ensureParengBoyongSession(sessionId, userId);
+
+      console.log('🤖 Creating AI service...');
       // Create AI service instance for this session
       const aiService = new AIService(sessionId);
       
+      console.log('📝 Processing message with AI...');
       // Process message with AI and persistent memory
       const response = await aiService.processMessage(sessionId, message, mode, userId);
 
