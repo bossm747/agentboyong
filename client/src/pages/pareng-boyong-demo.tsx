@@ -184,7 +184,7 @@ export default function ParengBoyongDemo() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div 
@@ -326,9 +326,9 @@ export default function ParengBoyongDemo() {
         </div>
 
         {/* Main Content Area with Tabs */}
-        <div className="flex-1 flex flex-col">
-          <Tabs defaultValue="chat" className="flex-1 flex flex-col">
-            <div className="sticky top-0 z-10 border-b border-purple-500/30 bg-black/95 backdrop-blur-sm px-2 sm:px-4 py-2">
+        <div className="flex-1 flex flex-col min-h-0">
+          <Tabs defaultValue="chat" className="flex-1 flex flex-col min-h-0">
+            <div className="border-b border-purple-500/30 bg-black px-2 sm:px-4 py-2 flex-shrink-0">
               <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth">
                 <TabsTrigger 
                   value="chat" 
