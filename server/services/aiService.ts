@@ -487,7 +487,11 @@ This ensures you provide accurate, up-to-date code that will actually work with 
       }
 
       // Execute any file operations mentioned in the AI response
-      await this.handleFileCreation(sessionId, message, assistantResponse);
+      try {
+        await this.executeFileCreation(sessionId, message, assistantResponse);
+      } catch (fileError) {
+        console.error('File creation failed:', fileError);
+      }
 
       // Re-enable conversation saving now that basic chat works
       await this.saveConversation(sessionId, userId, 'assistant', assistantResponse, mode);
@@ -547,8 +551,8 @@ This ensures you provide accurate, up-to-date code that will actually work with 
     }
   }
 
-  // Handle file creation based on AI response and user message
-  private async handleFileCreation(sessionId: string, userMessage: string, aiResponse: string): Promise<void> {
+  // Execute file creation based on AI response and user message
+  private async executeFileCreation(sessionId: string, userMessage: string, aiResponse: string): Promise<void> {
     try {
       // Check if user requested website/HTML creation
       if (userMessage.toLowerCase().includes('website') || 
