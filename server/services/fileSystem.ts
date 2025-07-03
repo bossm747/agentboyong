@@ -7,14 +7,23 @@ const WORKSPACE_ROOT = process.env.WORKSPACE_ROOT || './workspace';
 
 export class FileSystemService {
   private sessionId: string;
+  private projectId?: string; // Optional project isolation
 
-  constructor(sessionId: string) {
+  constructor(sessionId: string, projectId?: string) {
     this.sessionId = sessionId;
+    this.projectId = projectId;
   }
 
   private getFullPath(relativePath: string): string {
     const sessionPath = path.join(WORKSPACE_ROOT, this.sessionId);
-    return path.join(sessionPath, relativePath);
+    // If projectId is specified, use project-specific directory
+    const basePath = this.projectId ? path.join(sessionPath, this.projectId) : sessionPath;
+    return path.join(basePath, relativePath);
+  }
+
+  getWorkspaceDir(): string {
+    const sessionPath = path.join(WORKSPACE_ROOT, this.sessionId);
+    return this.projectId ? path.join(sessionPath, this.projectId) : sessionPath;
   }
 
   async ensureWorkspaceExists(): Promise<void> {

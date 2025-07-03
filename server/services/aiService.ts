@@ -554,45 +554,63 @@ This ensures you provide accurate, up-to-date code that will actually work with 
   // Execute file creation based on AI response and user message
   private async executeFileCreation(sessionId: string, userMessage: string, aiResponse: string): Promise<void> {
     try {
-      // Check if user requested website/HTML creation
-      if (userMessage.toLowerCase().includes('website') || 
-          userMessage.toLowerCase().includes('landing page') ||
-          userMessage.toLowerCase().includes('nexuspay')) {
+      const { ProjectManager } = await import('./projectManager');
+      const projectManager = new ProjectManager(sessionId);
+      
+      const appType = this.detectAppType(userMessage);
+      const projectName = this.extractProjectName(userMessage) || appType;
+      
+      let template;
+      
+      // Determine project type and get appropriate template
+      if (userMessage.toLowerCase().includes('calculator') || 
+          userMessage.toLowerCase().includes('calc')) {
+        template = projectManager.getCalculatorTemplate();
         
-        // Extract filename from user message or use default
-        let filename = 'index.html';
-        const nameMatch = userMessage.match(/called\s+(\w+)/i) || userMessage.match(/for\s+(\w+)/i);
-        if (nameMatch) {
-          filename = `${nameMatch[1].toLowerCase()}.html`;
-        }
+      } else if (userMessage.toLowerCase().includes('todo') || 
+                 userMessage.toLowerCase().includes('task')) {
+        template = projectManager.getTodoTemplate();
         
-        // Use file system service to create the file
-        const fileSystem = new FileSystemService(sessionId);
-        await fileSystem.ensureWorkspaceExists();
+      } else if (userMessage.toLowerCase().includes('website') || 
+                 userMessage.toLowerCase().includes('landing page') ||
+                 userMessage.toLowerCase().includes('nexuspay')) {
+        template = projectManager.getWebsiteTemplate(projectName);
         
-        // Generate website content
-        const htmlContent = this.generateNexusPayHTML(nameMatch ? nameMatch[1] : 'NexusPay');
-        await fileSystem.writeFile(filename, htmlContent);
-        
-        // Register application in database
-        await storage.createApplication({
-          sessionId,
-          name: nameMatch ? nameMatch[1] : 'NexusPay Website',
-          port: 8080,
-          url: `/app-proxy/${sessionId}/${filename.replace('.html', '')}`,
-          startCommand: 'static',
-          directory: `./workspace/${sessionId}`,
-          status: 'running',
-          description: 'Payment solution landing page',
-          language: 'html',
-          framework: 'static'
-        });
-        
-        console.log(`✅ Created ${filename} and registered application`);
+      } else {
+        // Default to website template for generic requests
+        template = projectManager.getWebsiteTemplate(projectName);
       }
+      
+      // Create the project with proper isolation
+      const projectId = await projectManager.createProject(projectName, template);
+      console.log(`✅ Project "${projectName}" created successfully with ID: ${projectId}`);
+      
     } catch (error) {
       console.error('❌ File operation execution failed:', error);
     }
+  }
+  
+  // Helper methods for project management
+  private detectAppType(message: string): string {
+    if (message.toLowerCase().includes('calculator')) return 'calculator';
+    if (message.toLowerCase().includes('todo')) return 'todo';
+    if (message.toLowerCase().includes('website')) return 'website';
+    if (message.toLowerCase().includes('landing')) return 'landing';
+    return 'webapp';
+  }
+  
+  private extractProjectName(message: string): string | null {
+    const namePatterns = [
+      /(?:called|named|for)\s+(\w+)/i,
+      /(\w+)\s+(?:app|website|page)/i,
+      /create\s+(?:a\s+)?(\w+)/i
+    ];
+    
+    for (const pattern of namePatterns) {
+      const match = message.match(pattern);
+      if (match) return match[1].toLowerCase();
+    }
+    return null;
   }
   
   // Generate NexusPay website HTML
