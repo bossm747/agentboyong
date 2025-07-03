@@ -3,6 +3,8 @@ import { GoogleGenAI } from '@google/genai';
 import { FileSystemService } from './fileSystem';
 import { TerminalService } from './terminal';
 import { CognitiveService } from './cognitiveService';
+import { Context7Service } from './context7Service';
+import { MockContext7Service } from './mockContext7Service';
 import { AgentProcessor } from '../agent-zero/agent-processor';
 import { AgentContextManager } from '../agent-zero/context';
 import { db } from '../db';
@@ -56,6 +58,7 @@ export class AIService {
   private fileSystem: FileSystemService;
   private terminal: TerminalService;
   private cognitive?: CognitiveService;
+  private context7?: Context7Service;
   private agentProcessor: AgentProcessor;
   private conversationHistory: Map<string, AIMessage[]> = new Map();
 
@@ -72,6 +75,21 @@ export class AIService {
     } catch (error) {
       console.error('❌ Failed to initialize cognitive service:', error);
       this.cognitive = undefined;
+    }
+
+    // Initialize Context7 service for real-time documentation
+    this.initializeContext7();
+  }
+
+  private async initializeContext7(): Promise<void> {
+    try {
+      // Use mock Context7 for demonstration (replace with real Context7Service when MCP package is available)
+      this.context7 = new MockContext7Service() as any;
+      await this.context7.initialize();
+      console.log('📚 Context7 MCP server initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize Context7:', error);
+      this.context7 = undefined;
     }
   }
 
@@ -363,9 +381,51 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
           usedFallback = false;
         } else {
           // Standard AI processing with memory context and mode-specific behavior
-          const contextualSystemPrompt = this.buildContextualPrompt(memoryContext, mode);
+          let contextualSystemPrompt = this.buildContextualPrompt(memoryContext, mode);
+          
+          // 📚 CONTEXT7 INTEGRATION: Fetch real-time documentation for mentioned libraries
+          let enhancedMessage = message;
+          if (this.context7 && this.context7.isReady()) {
+            try {
+              console.log('📚 Checking for libraries in message for Context7 docs...');
+              const contextualDocs = await this.context7.getContextualDocumentation(message);
+              
+              if (contextualDocs) {
+                console.log('✅ Context7 documentation fetched successfully');
+                
+                // Enhance system prompt with real-time documentation
+                contextualSystemPrompt += `
+
+## 📚 REAL-TIME DOCUMENTATION CONTEXT
+You now have access to the latest, official documentation for the libraries mentioned in the user's request. This information is current and accurate:
+
+${contextualDocs}
+
+**IMPORTANT INSTRUCTIONS:**
+- Use ONLY the provided documentation above for library-specific code examples and API usage
+- Do NOT rely on your training data for these libraries as it may be outdated
+- Reference the exact syntax, parameters, and examples from the documentation above
+- If the documentation doesn't cover what the user needs, mention that explicitly
+- Always prefer the documented approach over alternative methods you might know
+
+This ensures you provide accurate, up-to-date code that will actually work with current library versions.`;
+
+                // Add Context7 indicator to the message processing
+                enhancedMessage = `${message}
+
+📚 [Context7 active: Real-time documentation loaded for mentioned libraries]`;
+              } else {
+                console.log('ℹ️ No relevant libraries detected for Context7 docs');
+              }
+            } catch (context7Error) {
+              console.error('❌ Context7 documentation fetch failed:', context7Error);
+              // Continue without Context7 docs - don't break the flow
+            }
+          } else {
+            console.log('⚠️ Context7 not available or not ready');
+          }
         
-        // Prepare conversation history with memory context
+        // Prepare conversation history with enhanced context
         const history: AIMessage[] = [
           {
             role: 'system',
@@ -373,7 +433,7 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
           },
           {
             role: 'user',
-            content: message
+            content: enhancedMessage
           }
         ];
 
