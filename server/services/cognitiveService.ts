@@ -380,7 +380,9 @@ Return JSON:
 }`;
 
     try {
-      const reflection = JSON.parse(await this.callAI(reflectionPrompt));
+      const rawResponse = await this.callAI(reflectionPrompt);
+      const cleanResponse = rawResponse.replace(/```json\s*|\s*```/g, '').trim();
+      const reflection = JSON.parse(cleanResponse);
       
       const experienceData: InsertExperience = {
         userId,
@@ -401,10 +403,10 @@ Return JSON:
     }
   }
 
-  private async updateToolEffectiveness(tools: Tool[], solution: string): Promise<void> {
-    for (const tool of tools) {
-      const wasSuccessful = solution.includes('success') || !solution.includes('error');
-      
+  private async updateToolEffectiveness(selectedTools: Tool[], solution: string): Promise<void> {
+    const wasSuccessful = solution.includes('success') || !solution.includes('error');
+    
+    for (const tool of selectedTools) {
       if (wasSuccessful) {
         await db.update(tools).set({
           successCount: tool.successCount + 1,
@@ -442,7 +444,9 @@ Generate knowledge insights that can be useful for future problems. Return JSON 
 }]`;
 
     try {
-      const insights = JSON.parse(await this.callAI(knowledgePrompt));
+      const rawResponse = await this.callAI(knowledgePrompt);
+      const cleanResponse = rawResponse.replace(/```json\s*|\s*```/g, '').trim();
+      const insights = JSON.parse(cleanResponse);
       
       for (const insight of insights) {
         const knowledgeData: InsertKnowledge = {

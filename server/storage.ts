@@ -1,10 +1,12 @@
 import { 
   users, sessions, files, processes, environmentVariables,
-  conversations, memories, knowledge,
+  conversations, memories, knowledge, tools, experiences, reasoningChains,
   type User, type InsertUser, type Session, type InsertSession,
   type File, type InsertFile, type Process, type InsertProcess,
   type EnvironmentVariable, type InsertEnvironmentVariable,
-  type Conversation, type Memory, type Knowledge,
+  type Conversation, type InsertConversation, type Memory, type InsertMemory, 
+  type Knowledge, type InsertKnowledge, type Tool, type InsertTool, 
+  type Experience, type InsertExperience, type ReasoningChain, type InsertReasoningChain,
   type SystemStats, type FileTreeNode
 } from "@shared/schema";
 import { db } from "./db";
@@ -50,6 +52,24 @@ export interface IStorage {
   getMemories(userId: string): Promise<Memory[]>;
   getConversations(userId: string, limit?: number): Promise<Conversation[]>;
   deleteMemory(userId: string, memoryId: number): Promise<void>;
+
+  // Tool management
+  createTool(tool: InsertTool): Promise<Tool>;
+  getTools(userId: string): Promise<Tool[]>;
+  updateTool(id: number, data: Partial<Tool>): Promise<Tool>;
+  deleteTool(id: number): Promise<void>;
+
+  // Experience management
+  createExperience(experience: InsertExperience): Promise<Experience>;
+  getExperiences(userId: string, problemType?: string): Promise<Experience[]>;
+
+  // Knowledge management
+  createKnowledge(knowledge: InsertKnowledge): Promise<Knowledge>;
+  getKnowledge(userId: string, topic?: string): Promise<Knowledge[]>;
+
+  // Reasoning chains
+  createReasoningChain(chain: InsertReasoningChain): Promise<ReasoningChain>;
+  getReasoningChains(userId: string, sessionId?: string): Promise<ReasoningChain[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -305,6 +325,122 @@ export class DatabaseStorage implements IStorage {
         eq(memories.userId, userId),
         eq(memories.id, memoryId)
       ));
+  }
+
+  // Tool management methods
+  async createTool(insertTool: InsertTool): Promise<Tool> {
+    const [tool] = await db
+      .insert(tools)
+      .values(insertTool)
+      .returning();
+    return tool;
+  }
+
+  async getTools(userId: string): Promise<Tool[]> {
+    return await db
+      .select()
+      .from(tools)
+      .where(eq(tools.userId, userId))
+      .orderBy(desc(tools.effectiveness));
+  }
+
+  async updateTool(id: number, data: Partial<Tool>): Promise<Tool> {
+    const [tool] = await db
+      .update(tools)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(tools.id, id))
+      .returning();
+    return tool;
+  }
+
+  async deleteTool(id: number): Promise<void> {
+    await db
+      .delete(tools)
+      .where(eq(tools.id, id));
+  }
+
+  // Experience management methods
+  async createExperience(insertExperience: InsertExperience): Promise<Experience> {
+    const [experience] = await db
+      .insert(experiences)
+      .values(insertExperience)
+      .returning();
+    return experience;
+  }
+
+  async getExperiences(userId: string, problemType?: string): Promise<Experience[]> {
+    if (problemType) {
+      return await db
+        .select()
+        .from(experiences)
+        .where(and(
+          eq(experiences.userId, userId),
+          eq(experiences.problemType, problemType)
+        ))
+        .orderBy(desc(experiences.createdAt));
+    }
+
+    return await db
+      .select()
+      .from(experiences)
+      .where(eq(experiences.userId, userId))
+      .orderBy(desc(experiences.createdAt));
+  }
+
+  // Knowledge management methods
+  async createKnowledge(insertKnowledge: InsertKnowledge): Promise<Knowledge> {
+    const [knowledgeItem] = await db
+      .insert(knowledge)
+      .values(insertKnowledge)
+      .returning();
+    return knowledgeItem;
+  }
+
+  async getKnowledge(userId: string, topic?: string): Promise<Knowledge[]> {
+    if (topic) {
+      return await db
+        .select()
+        .from(knowledge)
+        .where(and(
+          eq(knowledge.userId, userId),
+          eq(knowledge.topic, topic)
+        ))
+        .orderBy(desc(knowledge.confidence));
+    }
+
+    return await db
+      .select()
+      .from(knowledge)
+      .where(eq(knowledge.userId, userId))
+      .orderBy(desc(knowledge.confidence));
+  }
+
+  // Reasoning chain methods
+  async createReasoningChain(insertChain: InsertReasoningChain): Promise<ReasoningChain> {
+    const [chain] = await db
+      .insert(reasoningChains)
+      .values(insertChain)
+      .returning();
+    return chain;
+  }
+
+  async getReasoningChains(userId: string, sessionId?: string): Promise<ReasoningChain[]> {
+    if (sessionId) {
+      return await db
+        .select()
+        .from(reasoningChains)
+        .where(and(
+          eq(reasoningChains.userId, userId),
+          eq(reasoningChains.sessionId, sessionId)
+        ))
+        .orderBy(desc(reasoningChains.createdAt));
+    }
+
+    return await db
+      .select()
+      .from(reasoningChains)
+      .where(eq(reasoningChains.userId, userId))
+      .orderBy(desc(reasoningChains.createdAt));
   }
 }
 

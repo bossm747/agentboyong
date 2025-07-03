@@ -58,8 +58,15 @@ export class AIService {
   constructor(sessionId: string) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
-    // Temporarily disable cognitive service to fix hanging issue
-    // this.cognitive = new CognitiveService(sessionId);
+    
+    // Re-enable cognitive service with error handling
+    try {
+      this.cognitive = new CognitiveService(sessionId);
+      console.log('🧠 Cognitive service initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize cognitive service:', error);
+      this.cognitive = undefined;
+    }
   }
 
   // Memory Management Methods
@@ -262,8 +269,17 @@ Only include genuinely important information worth remembering. Return empty arr
 
       console.log('🧪 Starting AI processing...');
       
-      // Check if this requires autonomous problem-solving (temporarily disabled for debugging)
-      let requiresAutonomousReasoning = false; // await this.shouldUseAutonomousReasoning(message, mode);
+      // Check if this requires autonomous problem-solving
+      let requiresAutonomousReasoning = false;
+      if (this.cognitive) {
+        try {
+          requiresAutonomousReasoning = await this.shouldUseAutonomousReasoning(message, mode);
+          console.log(`🔍 Autonomous reasoning required: ${requiresAutonomousReasoning}`);
+        } catch (error) {
+          console.error('❌ Error checking autonomous reasoning requirement:', error);
+          requiresAutonomousReasoning = false;
+        }
+      }
       
       console.log('🔄 Variables initialized...');
       let assistantResponse = '';
@@ -309,8 +325,15 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
       }
 
       if (!requiresAutonomousReasoning || !assistantResponse) {
-        // Standard AI processing with memory context
-        const contextualSystemPrompt = this.buildContextualPrompt(memoryContext, mode);
+        // Check for file operations first
+        const fileOperation = await this.detectFileOperation(message);
+        if (fileOperation) {
+          assistantResponse = await this.handleFileOperation(fileOperation, sessionId);
+          modelUsed = 'file-system';
+          usedFallback = false;
+        } else {
+          // Standard AI processing with memory context and mode-specific behavior
+          const contextualSystemPrompt = this.buildContextualPrompt(memoryContext, mode);
         
         // Prepare conversation history with memory context
         const history: AIMessage[] = [
@@ -347,6 +370,7 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
           assistantResponse = completion.choices[0].message.content || '';
           modelUsed = 'gpt-4o';
           usedFallback = true;
+        }
         }
       }
 
@@ -452,5 +476,97 @@ HACKER MODE: Focus on ethical security analysis, penetration testing, and vulner
 
   clearConversation(sessionId: string): void {
     this.conversationHistory.delete(sessionId);
+  }
+
+  private async detectFileOperation(message: string): Promise<{ type: string, params: any } | null> {
+    const lowerMessage = message.toLowerCase();
+    
+    // Create file operation
+    if (lowerMessage.includes('create') && (lowerMessage.includes('file') || lowerMessage.includes('script'))) {
+      const nameMatch = message.match(/(?:create|make).*?(?:file|script).*?(?:named|called)?\s*([^\s]+)/i);
+      const contentMatch = message.match(/(?:with|containing)?\s*(?:content|code)?:?\s*(.+)/i);
+      
+      if (nameMatch) {
+        return {
+          type: 'create',
+          params: {
+            filename: nameMatch[1].replace(/['"]/g, ''),
+            content: contentMatch ? contentMatch[1] : ''
+          }
+        };
+      }
+    }
+    
+    // List files operation
+    if (lowerMessage.includes('list') && lowerMessage.includes('file') || 
+        lowerMessage.includes('show') && lowerMessage.includes('file') ||
+        lowerMessage.includes('files')) {
+      return { type: 'list', params: {} };
+    }
+    
+    // Read file operation
+    if ((lowerMessage.includes('read') || lowerMessage.includes('show') || lowerMessage.includes('open')) && 
+        lowerMessage.includes('file')) {
+      const fileMatch = message.match(/(?:read|show|open).*?file.*?([^\s]+)/i);
+      if (fileMatch) {
+        return {
+          type: 'read',
+          params: { filename: fileMatch[1].replace(/['"]/g, '') }
+        };
+      }
+    }
+    
+    return null;
+  }
+
+  private async handleFileOperation(operation: { type: string, params: any }, sessionId: string): Promise<string> {
+    try {
+      switch (operation.type) {
+        case 'create':
+          await this.fileSystem.writeFile(operation.params.filename, operation.params.content);
+          return `✅ File '${operation.params.filename}' created successfully!
+
+📄 **File Contents:**
+\`\`\`
+${operation.params.content}
+\`\`\`
+
+Ang file ay naka-save na sa workspace. You can now edit, run, or share this file!`;
+
+        case 'list':
+          const fileTree = await this.fileSystem.getFileTree();
+          const fileList = this.formatFileTree(fileTree);
+          return `📁 **Workspace File Listing:**
+
+${fileList}
+
+Ito ang mga files sa workspace mo. Anong gusto mong gawin sa mga files na ito?`;
+
+        case 'read':
+          const content = await this.fileSystem.readFile(operation.params.filename);
+          return `📄 **File: ${operation.params.filename}**
+
+\`\`\`
+${content}
+\`\`\`
+
+Ito ang content ng file. May gusto ka bang i-edit o i-modify?`;
+
+        default:
+          return `❌ Unknown file operation: ${operation.type}`;
+      }
+    } catch (error) {
+      return `❌ File operation failed: ${error}`;
+    }
+  }
+
+  private formatFileTree(nodes: any[], indent = ''): string {
+    return nodes.map(node => {
+      if (node.type === 'directory') {
+        return `${indent}📁 ${node.name}/\n${this.formatFileTree(node.children || [], indent + '  ')}`;
+      } else {
+        return `${indent}📄 ${node.name}`;
+      }
+    }).join('\n');
   }
 }
