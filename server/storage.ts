@@ -1,12 +1,15 @@
 import { 
   users, sessions, files, processes, environmentVariables,
+  conversations, memories, knowledge,
   type User, type InsertUser, type Session, type InsertSession,
   type File, type InsertFile, type Process, type InsertProcess,
   type EnvironmentVariable, type InsertEnvironmentVariable,
+  type Conversation, type Memory, type Knowledge,
   type SystemStats, type FileTreeNode
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 import { systemMonitor } from "./services/systemMonitor";
 
 export interface IStorage {
@@ -42,6 +45,11 @@ export interface IStorage {
 
   // System monitoring
   getSystemStats(): Promise<SystemStats>;
+
+  // Memory management
+  getMemories(userId: string): Promise<Memory[]>;
+  getConversations(userId: string, limit?: number): Promise<Conversation[]>;
+  deleteMemory(userId: string, memoryId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -273,6 +281,30 @@ export class DatabaseStorage implements IStorage {
       disk: stats.disk,
       processes: stats.processes,
     };
+  }
+
+  // Memory management methods
+  async getMemories(userId: string): Promise<Memory[]> {
+    return await db.select()
+      .from(memories)
+      .where(eq(memories.userId, userId))
+      .orderBy(desc(memories.lastAccessed));
+  }
+
+  async getConversations(userId: string, limit: number = 20): Promise<Conversation[]> {
+    return await db.select()
+      .from(conversations)
+      .where(eq(conversations.userId, userId))
+      .orderBy(desc(conversations.createdAt))
+      .limit(limit);
+  }
+
+  async deleteMemory(userId: string, memoryId: number): Promise<void> {
+    await db.delete(memories)
+      .where(and(
+        eq(memories.userId, userId),
+        eq(memories.id, memoryId)
+      ));
   }
 }
 

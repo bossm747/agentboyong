@@ -482,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Real AI Chat endpoint for Pareng Boyong
   app.post('/api/pareng-boyong/chat', async (req: Request, res: Response) => {
     try {
-      const { message, mode = 'default', sessionId = 'main' } = req.body;
+      const { message, mode = 'default', sessionId = 'main', userId = 'default_user' } = req.body;
 
       if (!message) {
         return res.status(400).json({ error: 'Message is required' });
@@ -491,17 +491,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create AI service instance for this session
       const aiService = new AIService(sessionId);
       
-      // Process message with AI
-      const response = await aiService.processMessage(sessionId, message, mode);
+      // Process message with AI and persistent memory
+      const response = await aiService.processMessage(sessionId, message, mode, userId);
 
       res.json({
         message: response.content,
         sessionId,
+        userId,
         timestamp: new Date().toISOString(),
         agent: 'Pareng Boyong',
         company: 'InnovateHub PH',
         mode,
-        capabilities: 'ai_powered'
+        model: response.model,
+        fallback: response.fallback,
+        memoryInsights: response.memoryInsights,
+        capabilities: 'ai_powered_with_persistent_memory'
       });
 
     } catch (error) {
@@ -512,6 +516,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId: req.body.sessionId || 'main',
         timestamp: new Date().toISOString()
       });
+    }
+  });
+
+  // Memory management endpoints
+  app.get('/api/pareng-boyong/memories/:userId', async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const memories = await storage.getMemories(userId);
+      res.json(memories);
+    } catch (error) {
+      console.error('Failed to get memories:', error);
+      res.status(500).json({ error: 'Failed to retrieve memories' });
+    }
+  });
+
+  app.get('/api/pareng-boyong/conversations/:userId', async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const { limit = 20 } = req.query;
+      const conversations = await storage.getConversations(userId, parseInt(limit as string));
+      res.json(conversations);
+    } catch (error) {
+      console.error('Failed to get conversations:', error);
+      res.status(500).json({ error: 'Failed to retrieve conversations' });
+    }
+  });
+
+  app.delete('/api/pareng-boyong/memories/:userId/:memoryId', async (req: Request, res: Response) => {
+    try {
+      const { userId, memoryId } = req.params;
+      await storage.deleteMemory(userId, parseInt(memoryId));
+      res.json({ success: true, message: 'Memory deleted successfully' });
+    } catch (error) {
+      console.error('Failed to delete memory:', error);
+      res.status(500).json({ error: 'Failed to delete memory' });
     }
   });
 

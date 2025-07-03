@@ -61,15 +61,28 @@ export default function ParengBoyongDemo() {
       const response = await apiRequest("POST", "/api/pareng-boyong/chat", {
         message: currentMessage,
         mode: selectedMode,
-        sessionId: currentContext
+        sessionId: currentContext,
+        userId: 'demo_user'
       });
 
       const result = await response.json();
 
+      let content = result.message || result.error || "Sorry, naging may problema sa pag-proseso ng mensahe.";
+      
+      // Add memory insights if available
+      if (result.memoryInsights && result.memoryInsights.length > 0) {
+        content += "\n\n🧠 **Memory Context:**\n" + result.memoryInsights.map((insight: string) => `• ${insight}`).join('\n');
+      }
+
+      // Add model info if available
+      if (result.model) {
+        content += `\n\n*Powered by ${result.model}${result.fallback ? ' (fallback)' : ''}*`;
+      }
+
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         type: "agent",
-        content: result.message || result.error || "Sorry, naging may problema sa pag-proseso ng mensahe.",
+        content,
         timestamp: new Date().toISOString()
       };
 
