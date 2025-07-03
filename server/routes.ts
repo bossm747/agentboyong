@@ -516,6 +516,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const message = JSON.parse(data.toString());
         
         switch (message.type) {
+          case 'terminal_init':
+            // Initialize terminal session
+            ws.send(JSON.stringify({
+              type: 'terminal_cwd',
+              data: `./workspace/${sessionId}`
+            }));
+            break;
+            
+          case 'terminal_execute':
+            // Execute shell command
+            const command = message.data?.command;
+            if (command) {
+              executeShellCommand(command, sessionId, ws);
+            }
+            break;
+            
           case 'terminal:create':
             terminalId = `terminal_${Date.now()}`;
             const terminal = services.terminal.createTerminal(terminalId);
@@ -1056,6 +1072,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   return httpServer;
+}
+
+// Shell command execution function
+async function executeShellCommand(command: string, sessionId: string, ws: WebSocket) {
+  const { spawn } = require('child_process');
+  const path = require('path');
+  
+  try {
+    const workingDir = path.resolve(`./workspace/${sessionId}`);
+    
+    // Parse command and arguments
+    const args = command.split(' ');
+    const cmd = args[0];
+    const cmdArgs = args.slice(1);
+    
+    // Create child process
+    const childProcess = spawn(cmd, cmdArgs, {
+      cwd: workingDir,
+      stdio: 'pipe',
+      shell: true
+    });
+    
+    // Handle stdout
+    childProcess.stdout.on('data', (data) => {
+      ws.send(JSON.stringify({
+        type: 'terminal_output',
+        data: data.toString()
+      }));
+    });
+    
+    // Handle stderr
+    childProcess.stderr.on('data', (data) => {
+      ws.send(JSON.stringify({
+        type: 'terminal_error',
+        data: data.toString()
+      }));
+    });
+    
+    // Handle process exit
+    childProcess.on('close', (code) => {
+      ws.send(JSON.stringify({
+        type: 'terminal_complete',
+        data: `Command finished with exit code ${code}`
+      }));
+    });
+    
+    // Handle process error
+    childProcess.on('error', (error) => {
+      ws.send(JSON.stringify({
+        type: 'terminal_error',
+        data: `Error: ${error.message}`
+      }));
+    });
+    
+  } catch (error) {
+    ws.send(JSON.stringify({
+      type: 'terminal_error',
+      data: `Failed to execute command: ${error.message}`
+    }));
+  }
 }
 
 // Legacy function - keeping for compatibility but directing to main interface

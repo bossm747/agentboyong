@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import WebViewPanel from "@/components/webview-panel";
 import BackgroundTasksPanel from "@/components/background-tasks-panel";
 import FileManagerPanel from "@/components/file-manager-panel";
+import { TerminalPanel } from "@/components/terminal-panel";
 
 export default function ParengBoyongDemo() {
   const [message, setMessage] = useState("");
@@ -334,6 +335,14 @@ export default function ParengBoyongDemo() {
                   <span className="hidden sm:inline">Files</span>
                   <span className="sm:hidden">📁</span>
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="terminal" 
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
+                >
+                  <Code className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Terminal</span>
+                  <span className="sm:hidden">💻</span>
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -410,6 +419,10 @@ export default function ParengBoyongDemo() {
 
             <TabsContent value="files" className="flex-1 m-0 p-4">
               <FileManagerPanel sessionId={currentContext} />
+            </TabsContent>
+
+            <TabsContent value="terminal" className="flex-1 m-0 p-4">
+              <TerminalPanel sessionId={currentContext} />
             </TabsContent>
           </Tabs>
         </div>
