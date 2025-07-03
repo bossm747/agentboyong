@@ -1,12 +1,14 @@
 import { 
   users, sessions, files, processes, environmentVariables,
   conversations, memories, knowledge, tools, experiences, reasoningChains,
+  applications, backgroundTasks,
   type User, type InsertUser, type Session, type InsertSession,
   type File, type InsertFile, type Process, type InsertProcess,
   type EnvironmentVariable, type InsertEnvironmentVariable,
   type Conversation, type InsertConversation, type Memory, type InsertMemory, 
   type Knowledge, type InsertKnowledge, type Tool, type InsertTool, 
   type Experience, type InsertExperience, type ReasoningChain, type InsertReasoningChain,
+  type Application, type InsertApplication, type BackgroundTask, type InsertBackgroundTask,
   type SystemStats, type FileTreeNode
 } from "@shared/schema";
 import { db } from "./db";
@@ -84,6 +86,18 @@ export interface IStorage {
   // Reasoning chains
   createReasoningChain(chain: InsertReasoningChain): Promise<ReasoningChain>;
   getReasoningChains(userId: string, sessionId?: string): Promise<ReasoningChain[]>;
+
+  // Application management
+  createApplication(application: InsertApplication): Promise<Application>;
+  getApplications(sessionId: string): Promise<Application[]>;
+  updateApplication(id: number, data: Partial<Application>): Promise<Application>;
+  deleteApplication(id: number): Promise<void>;
+
+  // Background task management
+  createBackgroundTask(task: InsertBackgroundTask): Promise<BackgroundTask>;
+  getBackgroundTasks(sessionId: string): Promise<BackgroundTask[]>;
+  updateBackgroundTask(id: number, data: Partial<BackgroundTask>): Promise<BackgroundTask>;
+  deleteBackgroundTask(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -457,6 +471,71 @@ export class DatabaseStorage implements IStorage {
       .from(reasoningChains)
       .where(eq(reasoningChains.userId, userId))
       .orderBy(desc(reasoningChains.createdAt));
+  }
+
+  // Application management methods
+  async createApplication(insertApplication: InsertApplication): Promise<Application> {
+    const [application] = await db
+      .insert(applications)
+      .values(insertApplication)
+      .returning();
+    return application;
+  }
+
+  async getApplications(sessionId: string): Promise<Application[]> {
+    return await db
+      .select()
+      .from(applications)
+      .where(eq(applications.sessionId, sessionId))
+      .orderBy(desc(applications.lastActivity));
+  }
+
+  async updateApplication(id: number, data: Partial<Application>): Promise<Application> {
+    const [application] = await db
+      .update(applications)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(applications.id, id))
+      .returning();
+    return application;
+  }
+
+  async deleteApplication(id: number): Promise<void> {
+    await db.delete(applications).where(eq(applications.id, id));
+  }
+
+  // Background task management methods
+  async createBackgroundTask(insertTask: InsertBackgroundTask): Promise<BackgroundTask> {
+    const [task] = await db
+      .insert(backgroundTasks)
+      .values(insertTask)
+      .returning();
+    return task;
+  }
+
+  async getBackgroundTasks(sessionId: string): Promise<BackgroundTask[]> {
+    return await db
+      .select()
+      .from(backgroundTasks)
+      .where(eq(backgroundTasks.sessionId, sessionId))
+      .orderBy(desc(backgroundTasks.startedAt));
+  }
+
+  async updateBackgroundTask(id: number, data: Partial<BackgroundTask>): Promise<BackgroundTask> {
+    const updateData = { ...data };
+    if (data.status === 'completed' || data.status === 'failed') {
+      updateData.completedAt = new Date();
+    }
+    
+    const [task] = await db
+      .update(backgroundTasks)
+      .set(updateData)
+      .where(eq(backgroundTasks.id, id))
+      .returning();
+    return task;
+  }
+
+  async deleteBackgroundTask(id: number): Promise<void> {
+    await db.delete(backgroundTasks).where(eq(backgroundTasks.id, id));
   }
 }
 

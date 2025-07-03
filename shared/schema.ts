@@ -131,6 +131,44 @@ export const reasoningChains = pgTable("reasoning_chains", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Application instances running in the sandbox
+export const applications = pgTable("applications", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").references(() => sessions.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  port: integer("port").notNull(),
+  url: text("url").notNull(),
+  status: text("status").notNull().default("starting"), // 'starting', 'running', 'stopped', 'error'
+  processId: integer("process_id"),
+  startCommand: text("start_command").notNull(),
+  framework: text("framework"), // 'react', 'vue', 'express', 'fastapi', etc.
+  language: text("language"), // 'javascript', 'python', 'typescript', etc.
+  directory: text("directory").notNull(),
+  logs: text("logs").array().default([]).notNull(),
+  lastActivity: timestamp("last_activity").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Background process tracking for real-time visibility
+export const backgroundTasks = pgTable("background_tasks", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").references(() => sessions.id).notNull(),
+  taskType: text("task_type").notNull(), // 'file_operation', 'code_execution', 'research', 'analysis', 'installation'
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("running"), // 'running', 'completed', 'failed', 'cancelled'
+  progress: integer("progress").default(0).notNull(), // 0-100
+  currentStep: text("current_step"),
+  totalSteps: integer("total_steps"),
+  output: text("output").array().default([]).notNull(),
+  errorMessage: text("error_message"),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  estimatedDuration: integer("estimated_duration"), // in seconds
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -220,6 +258,34 @@ export const insertReasoningChainSchema = createInsertSchema(reasoningChains).pi
   executionPlan: true,
 });
 
+export const insertApplicationSchema = createInsertSchema(applications).pick({
+  sessionId: true,
+  name: true,
+  description: true,
+  port: true,
+  url: true,
+  status: true,
+  processId: true,
+  startCommand: true,
+  framework: true,
+  language: true,
+  directory: true,
+});
+
+export const insertBackgroundTaskSchema = createInsertSchema(backgroundTasks).pick({
+  sessionId: true,
+  taskType: true,
+  title: true,
+  description: true,
+  status: true,
+  progress: true,
+  currentStep: true,
+  totalSteps: true,
+  output: true,
+  errorMessage: true,
+  estimatedDuration: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -252,6 +318,12 @@ export type Experience = typeof experiences.$inferSelect;
 
 export type InsertReasoningChain = z.infer<typeof insertReasoningChainSchema>;
 export type ReasoningChain = typeof reasoningChains.$inferSelect;
+
+export type InsertApplication = z.infer<typeof insertApplicationSchema>;
+export type Application = typeof applications.$inferSelect;
+
+export type InsertBackgroundTask = z.infer<typeof insertBackgroundTaskSchema>;
+export type BackgroundTask = typeof backgroundTasks.$inferSelect;
 
 // Database relations
 export const usersRelations = relations(users, ({ many }) => ({

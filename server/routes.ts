@@ -393,6 +393,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Application management
+  app.get("/api/applications/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const applications = await storage.getApplications(sessionId);
+      res.json(applications);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get applications" });
+    }
+  });
+
+  app.post("/api/applications/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const applicationData = { ...req.body, sessionId };
+      const application = await storage.createApplication(applicationData);
+      res.json(application);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create application" });
+    }
+  });
+
+  app.put("/api/applications/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const application = await storage.updateApplication(parseInt(id), req.body);
+      res.json(application);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update application" });
+    }
+  });
+
+  app.delete("/api/applications/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteApplication(parseInt(id));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete application" });
+    }
+  });
+
+  // Background task management
+  app.get("/api/background-tasks/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const tasks = await storage.getBackgroundTasks(sessionId);
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get background tasks" });
+    }
+  });
+
+  app.post("/api/background-tasks/:sessionId", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const taskData = { ...req.body, sessionId };
+      const task = await storage.createBackgroundTask(taskData);
+      res.json(task);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create background task" });
+    }
+  });
+
+  app.put("/api/background-tasks/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const task = await storage.updateBackgroundTask(parseInt(id), req.body);
+      res.json(task);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update background task" });
+    }
+  });
+
+  app.delete("/api/background-tasks/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteBackgroundTask(parseInt(id));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete background task" });
+    }
+  });
+
   // WebSocket handling
   wss.on('connection', (ws: WebSocket, req) => {
     const url = new URL(req.url!, `http://${req.headers.host}`);

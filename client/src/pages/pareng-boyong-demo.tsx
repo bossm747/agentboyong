@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive, Menu, X } from "lucide-react";
+import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive, Menu, X, Activity, Monitor } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import WebViewPanel from "@/components/webview-panel";
+import BackgroundTasksPanel from "@/components/background-tasks-panel";
 
 export default function ParengBoyongDemo() {
   const [message, setMessage] = useState("");
@@ -294,68 +296,106 @@ export default function ParengBoyongDemo() {
           </div>
         </div>
 
-        {/* Main Chat Area */}
+        {/* Main Content Area with Tabs */}
         <div className="flex-1 flex flex-col">
-          {/* Chat Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-lg p-4 ${
-                  msg.type === 'user' 
-                    ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border border-cyan-400/50 text-cyan-100 shadow-lg shadow-cyan-500/30' 
-                    : msg.type === 'system'
-                    ? 'bg-green-500/20 border border-green-400/50 text-green-200 shadow-lg shadow-green-400/30'
-                    : 'bg-gray-800/50 border border-purple-500/50 text-purple-100 shadow-lg shadow-purple-500/20'
-                }`}>
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
-                  <div className={`text-xs mt-2 ${
-                    msg.type === 'user' ? 'text-cyan-300' : 'text-purple-300'
-                  }`}>
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {isProcessing && (
-              <div className="flex justify-start">
-                <div className="bg-gray-800 border border-cyan-400/50 rounded-lg p-4 max-w-[80%] shadow-lg shadow-cyan-400/20">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
-                    <span className="text-cyan-300">Pareng Boyong is thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
+          <Tabs defaultValue="chat" className="flex-1 flex flex-col">
+            <div className="border-b border-purple-500/30 bg-black px-4 py-2">
+              <TabsList className="bg-gray-800/50 border border-gray-600/50">
+                <TabsTrigger 
+                  value="chat" 
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+                >
+                  <Terminal className="h-4 w-4 mr-2" />
+                  Chat
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="webview" 
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  App Preview
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="tasks" 
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+                >
+                  <Activity className="h-4 w-4 mr-2" />
+                  Background Tasks
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-          {/* Message Input */}
-          <div className="border-t border-purple-500/30 bg-black p-4">
-            <div className="flex space-x-2">
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message to Pareng Boyong..."
-                className="flex-1 bg-black border-cyan-500/50 text-cyan-100 placeholder-purple-400 focus:border-cyan-400 focus:ring-cyan-400/50"
-                disabled={isProcessing}
-              />
-              <Button 
-                onClick={handleSendMessage}
-                disabled={!message.trim() || isProcessing}
-                variant="ghost"
-                className="bg-transparent border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 shadow-lg shadow-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="mt-2 text-xs text-purple-300">
-              Current mode: <strong className="text-cyan-400">{modeOptions.find(m => m.value === selectedMode)?.label}</strong> | 
-              Context: <strong className="text-purple-400">{currentContext}</strong>
-            </div>
-          </div>
+            <TabsContent value="chat" className="flex-1 flex flex-col m-0">
+              {/* Chat Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-lg p-4 ${
+                      msg.type === 'user' 
+                        ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border border-cyan-400/50 text-cyan-100 shadow-lg shadow-cyan-500/30' 
+                        : msg.type === 'system'
+                        ? 'bg-green-500/20 border border-green-400/50 text-green-200 shadow-lg shadow-green-400/30'
+                        : 'bg-gray-800/50 border border-purple-500/50 text-purple-100 shadow-lg shadow-purple-500/20'
+                    }`}>
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      <div className={`text-xs mt-2 ${
+                        msg.type === 'user' ? 'text-cyan-300' : 'text-purple-300'
+                      }`}>
+                        {new Date(msg.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {isProcessing && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-800 border border-cyan-400/50 rounded-lg p-4 max-w-[80%] shadow-lg shadow-cyan-400/20">
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-400"></div>
+                        <span className="text-cyan-300">Pareng Boyong is thinking...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Message Input */}
+              <div className="border-t border-purple-500/30 bg-black p-4">
+                <div className="flex space-x-2">
+                  <Input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type your message to Pareng Boyong..."
+                    className="flex-1 bg-black border-cyan-500/50 text-cyan-100 placeholder-purple-400 focus:border-cyan-400 focus:ring-cyan-400/50"
+                    disabled={isProcessing}
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={!message.trim() || isProcessing}
+                    variant="ghost"
+                    className="bg-transparent border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 shadow-lg shadow-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="mt-2 text-xs text-purple-300">
+                  Current mode: <strong className="text-cyan-400">{modeOptions.find(m => m.value === selectedMode)?.label}</strong> | 
+                  Context: <strong className="text-purple-400">{currentContext}</strong>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="webview" className="flex-1 m-0 p-4">
+              <WebViewPanel sessionId={currentContext} />
+            </TabsContent>
+
+            <TabsContent value="tasks" className="flex-1 m-0 p-4">
+              <BackgroundTasksPanel sessionId={currentContext} />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
