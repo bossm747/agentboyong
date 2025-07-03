@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive, Menu, X, Activity, Monitor, FolderOpen } from "lucide-react";
+import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive, Menu, X, Activity, Monitor, FolderOpen, Paperclip } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import WebViewPanel from "@/components/webview-panel";
 import BackgroundTasksPanel from "@/components/background-tasks-panel";
@@ -29,7 +29,10 @@ export default function ParengBoyongDemo() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("chat");
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,18 +51,20 @@ export default function ParengBoyongDemo() {
   }, [isSidebarOpen]);
 
   const handleSendMessage = async () => {
-    if (!message.trim() || isProcessing) return;
+    if ((!message.trim() && attachedFiles.length === 0) || isProcessing) return;
 
     const userMessage = {
       id: Date.now().toString(),
       type: "user",
-      content: message,
+      content: message + (attachedFiles.length > 0 ? ` [${attachedFiles.length} file${attachedFiles.length > 1 ? 's' : ''} attached: ${attachedFiles.map(f => f.name).join(', ')}]` : ''),
       timestamp: new Date().toISOString()
     };
 
     setMessages(prev => [...prev, userMessage]);
     const currentMessage = message;
+    const currentFiles = [...attachedFiles];
     setMessage("");
+    setAttachedFiles([]);
     setIsProcessing(true);
 
     try {
@@ -121,6 +126,40 @@ export default function ParengBoyongDemo() {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setAttachedFiles(prev => [...prev, ...files]);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    setAttachedFiles(prev => [...prev, ...files]);
+  };
+
+  const removeAttachedFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const modeOptions = [
@@ -475,29 +514,105 @@ export default function ParengBoyongDemo() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Message Input */}
-              <div className="border-t border-purple-500/30 bg-black p-3 sm:p-4 sticky bottom-0">
+              {/* Message Input with Multimodal Support */}
+              <div 
+                className={`border-t border-purple-500/30 bg-black p-3 sm:p-4 sticky bottom-0 ${isDragOver ? 'bg-cyan-500/10 border-cyan-400' : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {/* Attached Files Preview */}
+                {attachedFiles.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {attachedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center bg-gray-800/50 border border-purple-500/50 rounded-lg px-2 py-1 text-xs">
+                        <div className="flex items-center space-x-1 mr-2">
+                          {file.type.startsWith('image/') ? (
+                            <img 
+                              src={URL.createObjectURL(file)} 
+                              alt={file.name}
+                              className="w-6 h-6 object-cover rounded"
+                            />
+                          ) : (
+                            <FileText className="h-4 w-4 text-purple-400" />
+                          )}
+                          <span className="text-cyan-200 truncate max-w-20">{file.name}</span>
+                          <span className="text-gray-500">({formatFileSize(file.size)})</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 text-red-400 hover:text-red-300"
+                          onClick={() => removeAttachedFile(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Drag and Drop Overlay */}
+                {isDragOver && (
+                  <div className="absolute inset-0 bg-cyan-500/20 border-2 border-dashed border-cyan-400 flex items-center justify-center z-10 rounded-lg">
+                    <div className="text-center">
+                      <FileText className="h-8 w-8 mx-auto mb-2 text-cyan-400" />
+                      <p className="text-cyan-300 font-medium">Drop files here to attach</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                  <Input
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type your message to Pareng Boyong..."
-                    className="flex-1 bg-black border-cyan-500/50 text-cyan-100 placeholder-purple-400 focus:border-cyan-400 focus:ring-cyan-400/50 text-sm sm:text-base h-10 sm:h-auto"
-                    disabled={isProcessing}
-                  />
+                  <div className="flex-1 flex space-x-2">
+                    <Input
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder="Type your message to Pareng Boyong..."
+                      className="flex-1 bg-black border-cyan-500/50 text-cyan-100 placeholder-purple-400 focus:border-cyan-400 focus:ring-cyan-400/50 text-sm sm:text-base h-10 sm:h-auto"
+                      disabled={isProcessing}
+                    />
+                    
+                    {/* File Attachment Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="bg-transparent border border-purple-500/50 text-purple-400 hover:bg-purple-500/20 hover:border-purple-400 shadow-lg shadow-purple-500/20 px-2"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isProcessing}
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
                   <Button 
                     onClick={handleSendMessage}
-                    disabled={!message.trim() || isProcessing}
+                    disabled={(!message.trim() && attachedFiles.length === 0) || isProcessing}
                     variant="ghost"
                     className="bg-transparent border border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20 hover:border-cyan-400 shadow-lg shadow-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
+
+                {/* Hidden File Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                  accept="image/*,text/*,.pdf,.doc,.docx,.txt,.md,.json,.csv,.xlsx"
+                />
+
                 <div className="mt-2 text-xs text-purple-300">
                   Current mode: <strong className="text-cyan-400">{modeOptions.find(m => m.value === selectedMode)?.label}</strong> | 
                   Context: <strong className="text-purple-400">{currentContext}</strong>
+                  {attachedFiles.length > 0 && (
+                    <span className="ml-2">
+                      | <strong className="text-green-400">{attachedFiles.length} file{attachedFiles.length > 1 ? 's' : ''} attached</strong>
+                    </span>
+                  )}
                 </div>
               </div>
             </TabsContent>
