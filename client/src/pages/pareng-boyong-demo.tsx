@@ -369,9 +369,9 @@ export default function ParengBoyongDemo() {
               </TabsList>
             </div>
 
-            <TabsContent value="chat" className="flex-1 flex flex-col m-0">
+            <TabsContent value="chat" className="flex-1 flex flex-col m-0 h-full">
               {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-black">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 bg-black min-h-0">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[90%] sm:max-w-[85%] lg:max-w-[80%] rounded-lg p-3 sm:p-4 text-sm sm:text-base ${
