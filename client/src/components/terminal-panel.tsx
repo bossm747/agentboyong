@@ -98,8 +98,16 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       case 'terminal_complete':
         setIsExecuting(false);
         break;
+      case 'connection:established':
+        // Handle WebSocket connection established message
+        setIsConnected(true);
+        addLine(`Terminal session established (${message.sessionId})`, 'system');
+        break;
       default:
-        console.log('Unknown terminal message:', message);
+        // Only log truly unknown messages, not connection status updates
+        if (!message.type?.includes('connection') && !message.type?.includes('status')) {
+          console.log('Unknown terminal message:', message);
+        }
     }
   };
 

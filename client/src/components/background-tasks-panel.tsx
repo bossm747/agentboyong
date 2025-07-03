@@ -91,9 +91,11 @@ export default function BackgroundTasksPanel({ sessionId }: BackgroundTasksPanel
     }
   };
 
-  const formatDuration = (startedAt: string, completedAt?: string) => {
-    const start = new Date(startedAt);
-    const end = completedAt ? new Date(completedAt) : new Date();
+  const formatDuration = (startedAt: string | Date, completedAt?: string | Date) => {
+    const start = startedAt instanceof Date ? startedAt : new Date(startedAt);
+    const end = completedAt 
+      ? (completedAt instanceof Date ? completedAt : new Date(completedAt))
+      : new Date();
     const diff = Math.floor((end.getTime() - start.getTime()) / 1000);
     
     if (diff < 60) return `${diff}s`;

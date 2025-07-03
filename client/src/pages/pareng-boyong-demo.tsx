@@ -93,10 +93,19 @@ export default function ParengBoyongDemo() {
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       console.error('AI Chat Error:', error);
+      
+      // Get more detailed error information
+      let errorDetails = "Unknown error occurred";
+      if (error instanceof Error) {
+        errorDetails = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        errorDetails = JSON.stringify(error);
+      }
+      
       const errorMessage = {
         id: (Date.now() + 1).toString(),
         type: "agent",
-        content: "Sorry, hindi ko na-proseso ang inyong mensahe. May problema sa koneksyon. Subukan ninyo ulit.",
+        content: `Sorry, hindi ko na-proseso ang inyong mensahe. May problema sa koneksyon.\n\n**Error Details:** ${errorDetails}\n\nSubukan ninyo ulit.`,
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, errorMessage]);

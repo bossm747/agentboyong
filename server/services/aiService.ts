@@ -6,6 +6,7 @@ import { CognitiveService } from './cognitiveService';
 import { AgentProcessor } from '../agent-zero/agent-processor';
 import { AgentContextManager } from '../agent-zero/context';
 import { db } from '../db';
+import { storage } from '../storage';
 import { 
   conversations, 
   memories, 
@@ -59,6 +60,7 @@ export class AIService {
   private conversationHistory: Map<string, AIMessage[]> = new Map();
 
   constructor(sessionId: string) {
+    
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
     this.agentProcessor = new AgentProcessor(sessionId);
@@ -242,29 +244,48 @@ Only include genuinely important information worth remembering. Return empty arr
 
       console.log('📡 Sending request to Gemini API...');
       
-      // Add timeout to prevent hanging
+      // Increase timeout and add better error handling
       const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Gemini API timeout after 15 seconds')), 15000)
+        setTimeout(() => reject(new Error('Gemini API timeout after 30 seconds')), 30000)
       );
 
-      const apiCall = genai.models.generateContent({
-        model: "gemini-2.5-flash", // Use the more reliable flash model
-        contents: fullPrompt,
-      });
+      try {
+        const apiCall = genai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: fullPrompt,
+        });
 
-      const response = await Promise.race([apiCall, timeoutPromise]);
-      
-      console.log('📥 Received response from Gemini');
-      return { success: true, content: response.text || '' };
+        const response = await Promise.race([apiCall, timeoutPromise]);
+        
+        if (!response || !response.text) {
+          throw new Error('Empty response from Gemini API');
+        }
+        
+        console.log('📥 Received response from Gemini');
+        return { success: true, content: response.text };
+      } catch (apiError) {
+        // Log specific API errors for debugging
+        console.error('❌ Gemini API Call Error:', apiError instanceof Error ? apiError.message : 'Unknown API error');
+        throw apiError;
+      }
 
     } catch (error) {
-      console.error('❌ Gemini API Error:', error);
+      console.error('❌ Gemini API Error:', error instanceof Error ? error.message : 'Unknown error');
       return { success: false, content: '' };
     }
   }
 
   async processMessage(sessionId: string, message: string, mode: string = 'default', userId: string = 'default_user'): Promise<AIResponse> {
     try {
+      // Create background task for tracking
+      const backgroundTask = await storage.createBackgroundTask({
+        sessionId,
+        taskType: this.getTaskType(message, mode),
+        title: `${mode.toUpperCase()} Mode: ${message.substring(0, 50)}...`,
+        description: `Processing user request: "${message}"`,
+        status: 'running',
+      });
+
       // Re-enable memory context loading now that basic functionality works
       const memoryContext = await this.loadMemoryContext(userId, sessionId);
       
@@ -403,6 +424,13 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
         memoryInsights.push(`Created ${autonomousResults.newToolsCreated.length} new tools for enhanced capabilities`);
       }
 
+      // Update background task as completed
+      await storage.updateBackgroundTask(backgroundTask.id, {
+        status: 'completed',
+        completedAt: new Date(),
+        output: [assistantResponse.substring(0, 1000) + (assistantResponse.length > 1000 ? '...' : '')]
+      });
+
       return {
         content: assistantResponse,
         model: modelUsed,
@@ -412,8 +440,51 @@ This autonomous reasoning session has enhanced my capabilities and problem-solvi
 
     } catch (error) {
       console.error('AI Service Error:', error);
+      
+      // Mark background task as failed if it exists
+      try {
+        const failedTask = await storage.createBackgroundTask({
+          sessionId,
+          taskType: 'error_handling',
+          title: 'Task Failed',
+          description: `Error processing: "${message}"`,
+          status: 'failed',
+          output: [error instanceof Error ? error.message : 'Unknown error']
+        });
+      } catch (taskError) {
+        console.error('Failed to create error task:', taskError);
+      }
+      
       throw new Error('Failed to process AI request');
     }
+  }
+
+  private getTaskType(message: string, mode: string): string {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('file') || lowerMessage.includes('create') || lowerMessage.includes('write')) {
+      return 'file_operation';
+    }
+    if (lowerMessage.includes('code') || lowerMessage.includes('run') || lowerMessage.includes('execute')) {
+      return 'code_execution';
+    }
+    if (lowerMessage.includes('research') || lowerMessage.includes('analyze') || lowerMessage.includes('study')) {
+      return 'research';
+    }
+    if (lowerMessage.includes('install') || lowerMessage.includes('setup') || lowerMessage.includes('configure')) {
+      return 'installation';
+    }
+    if (mode === 'developer') {
+      return 'development';
+    }
+    if (mode === 'researcher') {
+      return 'research';
+    }
+    if (mode === 'hacker') {
+      return 'security_analysis';
+    }
+    
+    return 'general_task';
   }
 
   private async shouldUseAutonomousReasoning(message: string, mode: string): Promise<boolean> {
