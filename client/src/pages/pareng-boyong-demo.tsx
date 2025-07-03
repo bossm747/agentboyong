@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Send, Settings, Play, Pause, Terminal, FileText, Globe, Search, Code, Cpu, MemoryStick, HardDrive, Menu, X } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ParengBoyongDemo() {
   const [message, setMessage] = useState("");
@@ -40,7 +41,7 @@ export default function ParengBoyongDemo() {
     return () => window.removeEventListener('resize', handleResize);
   }, [isSidebarOpen]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim() || isProcessing) return;
 
     const userMessage = {
@@ -51,40 +52,40 @@ export default function ParengBoyongDemo() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentMessage = message;
     setMessage("");
     setIsProcessing(true);
 
-    // Simulate AI processing
-    setTimeout(() => {
-      let response = "";
-      const lowerMessage = message.toLowerCase();
-      
-      if (lowerMessage.includes("kumusta") || lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-        response = "Kumusta! Mabuti naman ako. Salamat sa pagtatanong! Ano ang maitutulong ko sa inyo ngayon? Pwede akong gumawa ng code, mag-research, o mag-analyze ng mga files.";
-      } else if (lowerMessage.includes("code") || lowerMessage.includes("program")) {
-        response = "Sige, kaya kong gumawa ng code! Anong programming language ang gusto ninyo? Python, JavaScript, Java, C++, o iba pa? Sabihin lang ninyo kung anong proyekto ang gagawin natin.";
-      } else if (lowerMessage.includes("research") || lowerMessage.includes("search")) {
-        response = "Perfect! Kaya kong mag-research ng kahit anong topic. Magse-search ako sa internet, mag-analyze ng data, at magbibigay ng comprehensive na report. Anong topic ang ire-research natin?";
-      } else if (lowerMessage.includes("hack") || lowerMessage.includes("security")) {
-        response = "Oo, may hacker mode din ako! Kaya kong mag-analyze ng security vulnerabilities, gumawa ng penetration testing scripts, at mag-audit ng systems. Pero syempre, ethical hacking lang ha! Anong security analysis ang kailangan ninyo?";
-      } else if (lowerMessage.includes("file") || lowerMessage.includes("folder")) {
-        response = "Kaya kong mag-manage ng files at folders! Pwede kong basahin, gumawa, i-edit, o i-organize ang mga files ninyo. May specific na file operations ba kayong kailangan?";
-      } else if (lowerMessage.includes("help") || lowerMessage.includes("tulong")) {
-        response = "Eto ang mga kaya kong gawin:\n\n🔧 **Developer Mode**: Code generation, debugging, project creation\n🔍 **Researcher Mode**: Internet research, data analysis, reports\n🛡️ **Hacker Mode**: Security analysis, penetration testing, vulnerability assessment\n📁 **File Management**: Create, read, edit, organize files\n🖥️ **System Commands**: Execute terminal commands, manage processes\n\nAnong mode ang gusto ninyong subukan?";
-      } else {
-        response = `Naintindihan ko ang inyong tanong tungkol sa "${message}". Bilang AI AGI, kaya kong mag-analyze at magbigay ng comprehensive na sagot. Anong specific na aspeto ang gusto ninyong ma-explore ko dito?`;
-      }
+    try {
+      // Call real AI API
+      const response = await apiRequest("POST", "/api/pareng-boyong/chat", {
+        message: currentMessage,
+        mode: selectedMode,
+        sessionId: currentContext
+      });
+
+      const result = await response.json();
 
       const aiMessage = {
         id: (Date.now() + 1).toString(),
         type: "agent",
-        content: response,
+        content: result.message || result.error || "Sorry, naging may problema sa pag-proseso ng mensahe.",
         timestamp: new Date().toISOString()
       };
 
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('AI Chat Error:', error);
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        type: "agent",
+        content: "Sorry, hindi ko na-proseso ang inyong mensahe. May problema sa koneksyon. Subukan ninyo ulit.",
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsProcessing(false);
-    }, 1500);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

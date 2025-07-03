@@ -11,6 +11,7 @@ import { TerminalService } from "./services/terminal";
 import { AgentContextManager } from './agent-zero/context';
 import { AgentProcessor } from './agent-zero/agent-processor';
 import { systemMonitor } from "./services/systemMonitor";
+import { AIService } from "./services/aiService";
 import { insertFileSchema, insertEnvironmentVariableSchema } from "@shared/schema";
 
 const upload = multer({ dest: 'uploads/' });
@@ -478,17 +479,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }));
   });
 
-  // Pareng Boyong API endpoints - Proxy to Agent Zero backend with runtime sandbox
+  // Real AI Chat endpoint for Pareng Boyong
   app.post('/api/pareng-boyong/chat', async (req: Request, res: Response) => {
-    res.json({
-      message: `🇵🇭 **Kumusta! I'm Pareng Boyong** - Your Filipino AI AGI Super Agent!\n\nI'm ready with all my original capabilities:\n\n**Available Modes:**\n🔬 **Researcher Mode** - Advanced data analysis and research\n💻 **Developer Mode** - Full-stack development capabilities  \n🎯 **Hacker Mode** - Ethical security analysis and system inspection\n\n**Core Features:**\n✅ **Code Execution** - Python, JavaScript, all languages\n✅ **File Management** - Complete filesystem control\n✅ **System Access** - Terminal and process management\n✅ **Runtime Sandbox** - Secure unlimited execution environment\n\nTo use the full interface with all modes, click the **🇵🇭 Pareng Boyong** button to open my complete chat interface!\n\n**Walang hangganan ang aking kakayahan!** 🚀`,
-      sessionId: req.body.sessionId || 'pareng_boyong_session',
-      timestamp: new Date().toISOString(),
-      agent: 'Pareng Boyong',
-      company: 'InnovateHub PH',
-      capabilities: 'unlimited',
-      runtime_sandbox: 'integrated'
-    });
+    try {
+      const { message, mode = 'default', sessionId = 'main' } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      // Create AI service instance for this session
+      const aiService = new AIService(sessionId);
+      
+      // Process message with AI
+      const response = await aiService.processMessage(sessionId, message, mode);
+
+      res.json({
+        message: response.content,
+        sessionId,
+        timestamp: new Date().toISOString(),
+        agent: 'Pareng Boyong',
+        company: 'InnovateHub PH',
+        mode,
+        capabilities: 'ai_powered'
+      });
+
+    } catch (error) {
+      console.error('Pareng Boyong chat error:', error);
+      res.status(500).json({ 
+        error: 'Failed to process message',
+        message: 'Sorry, naging may problema sa pag-proseso ng mensahe. Subukan ninyo ulit.',
+        sessionId: req.body.sessionId || 'main',
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 
   app.get('/api/pareng-boyong/status', (req: Request, res: Response) => {
