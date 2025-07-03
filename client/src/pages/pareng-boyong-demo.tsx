@@ -28,7 +28,7 @@ export default function ParengBoyongDemo() {
   const [currentContext, setCurrentContext] = useState("pareng-boyong-main");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("webview");
+  const [activeTab, setActiveTab] = useState("chat");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -325,7 +325,7 @@ export default function ParengBoyongDemo() {
         <div className="flex-1 flex flex-col min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <div className="border-b border-purple-500/30 bg-black px-2 py-2 flex-shrink-0">
-              <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth">
+              <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth grid grid-cols-5">
                 <TabsTrigger 
                   value="chat" 
                   className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
