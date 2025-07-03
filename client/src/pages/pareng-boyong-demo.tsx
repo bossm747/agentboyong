@@ -12,6 +12,7 @@ import WebViewPanel from "@/components/webview-panel";
 import BackgroundTasksPanel from "@/components/background-tasks-panel";
 import FileManagerPanel from "@/components/file-manager-panel";
 import { TerminalPanel } from "@/components/terminal-panel";
+import innovateHubLogo from "@assets/innovatehub_1751536111664.png";
 
 export default function ParengBoyongDemo() {
   const [message, setMessage] = useState("");
@@ -145,7 +146,7 @@ export default function ParengBoyongDemo() {
             </Button>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shadow-lg shadow-cyan-400/50 border border-cyan-400/50 overflow-hidden bg-white">
               <img 
-                src="/attached_assets/innovatehub_1751536111664.png" 
+                src={innovateHubLogo} 
                 alt="InnovateHub Logo" 
                 className="w-full h-full object-contain"
               />
