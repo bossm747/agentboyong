@@ -133,7 +133,7 @@ export default function ParengBoyongDemo() {
   return (
     <div className="h-screen flex flex-col bg-black fixed inset-0 overflow-hidden">
       {/* Header */}
-      <div className="bg-black border-b border-cyan-500/30 p-3 sm:p-4 shadow-lg shadow-cyan-500/20">
+      <div className="bg-black border-b border-cyan-500/30 p-2 sm:p-3 shadow-lg shadow-cyan-500/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Mobile Menu Button */}
@@ -185,7 +185,7 @@ export default function ParengBoyongDemo() {
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden relative min-h-0">
+      <div className="flex-1 flex overflow-hidden relative min-h-0 p-0">
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div 
@@ -324,7 +324,7 @@ export default function ParengBoyongDemo() {
         {/* Main Content Area - Mobile takes full width */}
         <div className="flex-1 flex flex-col min-h-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <div className="border-b border-purple-500/30 bg-black px-2 py-2 flex-shrink-0">
+            <div className="border-b border-purple-500/30 bg-black px-1 py-0.5 flex-shrink-0">
               <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth grid grid-cols-5">
                 <TabsTrigger 
                   value="chat" 
@@ -432,7 +432,7 @@ export default function ParengBoyongDemo() {
               </div>
             </TabsContent>
 
-            <TabsContent value="webview" className="flex-1 m-0 p-0 h-full">
+            <TabsContent value="webview" className="flex-1 m-0 p-0 h-full overflow-hidden">
               <WebViewPanel sessionId={currentContext} />
             </TabsContent>
 
