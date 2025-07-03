@@ -28,6 +28,7 @@ export default function ParengBoyongDemo() {
   const [currentContext, setCurrentContext] = useState("pareng-boyong-main");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("webview");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -130,7 +131,7 @@ export default function ParengBoyongDemo() {
   ];
 
   return (
-    <div className="h-screen flex flex-col bg-black">
+    <div className="h-screen flex flex-col bg-black fixed inset-0 overflow-hidden">
       {/* Header */}
       <div className="bg-black border-b border-cyan-500/30 p-3 sm:p-4 shadow-lg shadow-cyan-500/20">
         <div className="flex items-center justify-between">
@@ -193,17 +194,12 @@ export default function ParengBoyongDemo() {
           />
         )}
         
-        {/* Sidebar */}
+        {/* Sidebar - Completely hidden on mobile */}
         <div className={`
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-          lg:translate-x-0 
-          fixed lg:relative 
-          top-0 left-0 
-          z-50 lg:z-auto
-          w-72 sm:w-80 h-full lg:h-auto
+          hidden lg:block
+          w-72 xl:w-80 h-full
           bg-black border-r border-purple-500/30 p-3 overflow-y-auto
-          transition-transform duration-300 ease-in-out
-          shadow-xl lg:shadow-none
+          flex-shrink-0
         `}>
           {/* Mobile Close Button */}
           <div className="flex justify-end mb-3 md:hidden">
@@ -325,10 +321,10 @@ export default function ParengBoyongDemo() {
           </div>
         </div>
 
-        {/* Main Content Area with Tabs */}
+        {/* Main Content Area - Mobile takes full width */}
         <div className="flex-1 flex flex-col min-h-0">
-          <Tabs defaultValue="chat" className="flex-1 flex flex-col min-h-0">
-            <div className="border-b border-purple-500/30 bg-black px-2 sm:px-4 py-2 flex-shrink-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            <div className="border-b border-purple-500/30 bg-black px-2 py-2 flex-shrink-0">
               <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth">
                 <TabsTrigger 
                   value="chat" 

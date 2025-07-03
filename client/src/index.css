@@ -38,34 +38,53 @@
   }
   body {
     @apply bg-background text-foreground;
+    height: 100vh;
+    overflow: hidden;
   }
 }
 
-/* Mobile optimizations for preview */
-@media (max-width: 768px) {
-  /* Ensure iframe fills available space without scrollbars */
-  iframe {
+/* Force proper mobile layout */
+@media (max-width: 1024px) {
+  /* Hide all sidebars on mobile */
+  .mobile-hide-sidebar {
+    display: none !important;
+  }
+  
+  /* Make webview fill screen */
+  .webview-mobile-full {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 1000 !important;
+  }
+  
+  /* Mobile app preview specific styles */
+  .mobile-webview-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: black;
+    z-index: 999;
+  }
+  
+  .mobile-webview-header {
+    height: 60px;
+    flex-shrink: 0;
+  }
+  
+  .mobile-webview-content {
+    height: calc(100vh - 60px);
+    width: 100vw;
+  }
+  
+  .mobile-webview-iframe {
     width: 100% !important;
     height: 100% !important;
     border: none !important;
-    display: block !important;
-  }
-  
-  /* Optimize touch targets */
-  button, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-  }
-  
-  /* Reduce unnecessary padding in mobile view */
-  .mobile-optimized {
-    padding: 0.25rem !important;
-  }
-  
-  /* Ensure full viewport usage */
-  .mobile-full-height {
-    height: 100vh !important;
-    max-height: 100vh !important;
   }
 }
 
@@ -88,7 +107,7 @@
   background: rgba(139, 92, 246, 0.7);
 }
 
-/* Ensure proper flex behavior for mobile */
+/* Ensure proper flex behavior */
 .flex-mobile-optimized {
   display: flex;
   flex-direction: column;
@@ -104,21 +123,4 @@
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
-}
-
-/* Responsive iframe container */
-.iframe-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.iframe-container iframe {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
 }
