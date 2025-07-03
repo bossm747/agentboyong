@@ -145,17 +145,12 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
             <iframe
               ref={iframeRef}
               src={`/app-proxy/${sessionId}/todo`}
-              className="w-full h-full border-0 bg-white block absolute inset-0"
+              className="w-full h-full border-0 bg-white block"
               title={`${selectedApp.name} Preview`}
               sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
               loading="lazy"
               onLoad={() => console.log('Todo app loaded successfully')}
               onError={(e) => console.error('Failed to load todo app')}
-              style={{ 
-                minHeight: '100%',
-                height: '100vh',
-                maxHeight: '100%'
-              }}
             />
           </div>
         ) : (
