@@ -143,8 +143,12 @@ export default function ParengBoyongDemo() {
             >
               {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shadow-lg shadow-cyan-400/50 border border-cyan-400/50">
-              🇵🇭
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shadow-lg shadow-cyan-400/50 border border-cyan-400/50 overflow-hidden bg-white">
+              <img 
+                src="/attached_assets/innovatehub_1751536111664.png" 
+                alt="InnovateHub Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="font-bold text-base sm:text-lg text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text truncate">Pareng Boyong</h1>
