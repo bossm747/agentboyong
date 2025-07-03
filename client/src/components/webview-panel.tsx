@@ -75,8 +75,7 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm text-cyan-400 flex items-center font-semibold">
             <Globe className="h-4 w-4 mr-2" />
-            App Preview
-          </h3>
+            App Preview          </h3>
           <div className="flex items-center space-x-1">
             {/* Viewport Controls */}
             <Button
@@ -138,8 +137,8 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
         )}
       </div>
 
-      {/* Content Area - Takes remaining space */}
-      <div className="flex-1 overflow-hidden">
+      {/* Content Area - Minimized spacing */}
+      <div className="flex-1 flex flex-col bg-black overflow-hidden p-1 gap-1 min-h-0">
         {selectedApp ? (
           <iframe
             ref={iframeRef}
@@ -154,7 +153,7 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
         ) : (
           <div className="flex items-center justify-center h-full text-center">
             <div className="text-gray-400">
-              <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <Globe className="h-12 w-12 mx-auto mb-3" />
               <p className="text-sm">No running applications</p>
               <p className="text-xs text-purple-300 mt-2">
                 Create an app with Pareng Boyong to see it here
