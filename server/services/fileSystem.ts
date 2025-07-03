@@ -37,6 +37,20 @@ export class FileSystemService {
   }
 
   async writeFile(filePath: string, content: string): Promise<void> {
+    // Input validation
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Invalid file path provided');
+    }
+    
+    if (typeof content !== 'string') {
+      throw new Error('Content must be a string');
+    }
+    
+    // Security check: prevent path traversal
+    if (filePath.includes('..') || path.isAbsolute(filePath)) {
+      throw new Error('Invalid file path: path traversal detected');
+    }
+    
     const fullPath = this.getFullPath(filePath);
     const dir = path.dirname(fullPath);
     
@@ -44,7 +58,7 @@ export class FileSystemService {
       await fs.mkdir(dir, { recursive: true });
       await fs.writeFile(fullPath, content, 'utf-8');
       
-      // Update storage
+      // Update storage with error handling
       const stats = await fs.stat(fullPath);
       const mimeType = this.getMimeType(filePath);
       

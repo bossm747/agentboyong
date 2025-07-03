@@ -28,13 +28,29 @@ import {
 } from '@shared/schema';
 import { eq, desc, and, gte } from 'drizzle-orm';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize OpenAI with proper error handling
+let openai: OpenAI | null = null;
+try {
+  if (process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+} catch (error) {
+  console.warn('OpenAI initialization failed:', error);
+}
 
-const genai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY || '' 
-});
+// Initialize Google Gemini with proper error handling
+let genai: GoogleGenAI | null = null;
+try {
+  if (process.env.GEMINI_API_KEY) {
+    genai = new GoogleGenAI({ 
+      apiKey: process.env.GEMINI_API_KEY
+    });
+  }
+} catch (error) {
+  console.warn('Gemini initialization failed:', error);
+}
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -85,8 +101,10 @@ export class AIService {
     try {
       // Use mock Context7 for demonstration (replace with real Context7Service when MCP package is available)
       this.context7 = new MockContext7Service() as any;
-      await this.context7.initialize();
-      console.log('📚 Context7 MCP server initialized successfully');
+      if (this.context7) {
+        await this.context7.initialize();
+        console.log('📚 Context7 MCP server initialized successfully');
+      }
     } catch (error) {
       console.error('❌ Failed to initialize Context7:', error);
       this.context7 = undefined;
@@ -233,8 +251,8 @@ Only include genuinely important information worth remembering. Return empty arr
   private async tryGemini(messages: AIMessage[]): Promise<{ success: boolean; content: string }> {
     try {
       console.log('🔑 Checking Gemini API key...');
-      if (!process.env.GEMINI_API_KEY) {
-        console.log('❌ Gemini API key not found');
+      if (!process.env.GEMINI_API_KEY || !genai) {
+        console.log('❌ Gemini API key not found or client not initialized');
         return { success: false, content: '' };
       }
 
@@ -268,7 +286,7 @@ Only include genuinely important information worth remembering. Return empty arr
       );
 
       try {
-        const apiCall = genai.models.generateContent({
+        const apiCall = genai!.models.generateContent({
           model: "gemini-2.5-flash",
           contents: fullPrompt,
         });
@@ -447,6 +465,10 @@ This ensures you provide accurate, up-to-date code that will actually work with 
           usedFallback = false;
         } else {
           console.log('❌ Gemini failed, falling back to OpenAI...');
+          
+          if (!openai) {
+            throw new Error('OpenAI client not initialized - API key required');
+          }
           
           // Fallback to OpenAI
           const completion = await openai.chat.completions.create({
@@ -821,11 +843,7 @@ Tapos na ang command execution. May iba pa bang gusto ninyong i-execute?`;
       let context = AgentContextManager.getContext(contextId);
       
       if (!context) {
-        context = AgentContextManager.createContext(contextId, {
-          name: `Pareng Boyong ${mode.toUpperCase()} Mode`,
-          agent: 'pareng-boyong',
-          usr: userId
-        });
+        context = AgentContextManager.createContext(contextId, "user");
       }
 
       // Process message with Agent Zero
@@ -923,7 +941,7 @@ Don't worry, natry ko pa rin ang best ko para sa inyo. May ibang approach ba tay
       
       // Create all files in the session workspace
       for (const [filename, content] of Object.entries(files)) {
-        await this.fileSystem.writeFile(sessionId, filename, content);
+        await this.fileSystem.writeFile(filename, content);
       }
 
       // Start the application server
@@ -934,10 +952,11 @@ Don't worry, natry ko pa rin ang best ko para sa inyo. May ibang approach ba tay
       await storage.createApplication({
         sessionId,
         name: appName,
-        type: appType,
         port: port,
         status: 'running',
         url: `http://localhost:${port}`,
+        startCommand: serverCommand,
+        directory: sessionId,
         description: `${appType} webapp with ${requirements.join(', ')} functionality`
       });
 
@@ -1964,7 +1983,7 @@ if __name__ == "__main__":
     
     // Start server
     const command = 'cd workspace/' + sessionId + ' && chmod +x serve.py && nohup python3 serve.py > server.log 2>&1 &';
-    this.terminal.executeCommand(sessionId, 'bash', ['-c', command]);
+    this.terminal.executeCommand('bash', ['-c', command]);
     
     // Register app
     setTimeout(async () => {

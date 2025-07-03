@@ -45,6 +45,12 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
   }, [lines]);
 
   const connectToTerminal = () => {
+    // Close existing connection if any
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws?sessionId=${sessionId}`;
     

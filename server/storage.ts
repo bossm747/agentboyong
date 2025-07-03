@@ -16,18 +16,41 @@ import { eq, and } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { systemMonitor } from "./services/systemMonitor";
 
-// Database operation wrapper with error handling
+// Database operation wrapper with error handling and retry logic
 async function withErrorHandling<T>(operation: () => Promise<T>, operationName: string): Promise<T | undefined> {
-  try {
-    return await operation();
-  } catch (error) {
-    console.error(`Database error in ${operationName}:`, error);
-    // Return undefined for read operations, re-throw for critical operations
-    if (operationName.includes('get') || operationName.includes('read')) {
-      return undefined;
+  const maxRetries = 3;
+  let lastError: Error | unknown;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      
+      // Log error with attempt info
+      console.error(`Database error in ${operationName} (attempt ${attempt}/${maxRetries}):`, error);
+      
+      // Don't retry for certain types of errors
+      if (error instanceof Error && (
+        error.message.includes('unique constraint') ||
+        error.message.includes('not found') ||
+        error.message.includes('permission denied')
+      )) {
+        break;
+      }
+      
+      // Wait before retrying (exponential backoff)
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 100));
+      }
     }
-    throw error;
   }
+  
+  // Return undefined for read operations, re-throw for critical operations
+  if (operationName.includes('get') || operationName.includes('read')) {
+    return undefined;
+  }
+  throw lastError;
 }
 
 export interface IStorage {
