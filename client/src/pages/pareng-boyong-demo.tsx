@@ -300,35 +300,39 @@ export default function ParengBoyongDemo() {
         {/* Main Content Area with Tabs */}
         <div className="flex-1 flex flex-col">
           <Tabs defaultValue="chat" className="flex-1 flex flex-col">
-            <div className="border-b border-purple-500/30 bg-black px-4 py-2">
-              <TabsList className="bg-gray-800/50 border border-gray-600/50">
+            <div className="border-b border-purple-500/30 bg-black px-2 sm:px-4 py-2">
+              <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto">
                 <TabsTrigger 
                   value="chat" 
-                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
                 >
-                  <Terminal className="h-4 w-4 mr-2" />
-                  Chat
+                  <Terminal className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Chat</span>
+                  <span className="sm:hidden">💬</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="webview" 
-                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
                 >
-                  <Globe className="h-4 w-4 mr-2" />
-                  App Preview
+                  <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">App Preview</span>
+                  <span className="sm:hidden">🌐</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="tasks" 
-                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
                 >
-                  <Activity className="h-4 w-4 mr-2" />
-                  Background Tasks
+                  <Activity className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Tasks</span>
+                  <span className="sm:hidden">⚡</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="files" 
-                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400"
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
                 >
-                  <FolderOpen className="h-4 w-4 mr-2" />
-                  Files
+                  <FolderOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Files</span>
+                  <span className="sm:hidden">📁</span>
                 </TabsTrigger>
               </TabsList>
             </div>

@@ -55,10 +55,20 @@ export default function FileManagerPanel({ sessionId }: FileManagerPanelProps) {
   const { data: fileTree = [], refetch: refetchFiles } = useQuery({
     queryKey: ['/api/files', sessionId, 'tree'],
     queryFn: async () => {
-      const response = await fetch(`/api/files/${sessionId}/tree`);
-      return response.json();
+      try {
+        const response = await fetch(`/api/files/${sessionId}/tree`);
+        if (!response.ok) {
+          return []; // Return empty array on error for better UX
+        }
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.warn('File tree fetch error:', error);
+        return [];
+      }
     },
-    refetchInterval: 3000, // Refresh every 3 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds
+    retry: 1, // Only retry once to avoid spam
   });
 
   const createFileMutation = useMutation({
@@ -374,13 +384,14 @@ export default function FileManagerPanel({ sessionId }: FileManagerPanelProps) {
 
   return (
     <div className="h-full flex flex-col bg-black border border-purple-500/30 rounded-lg overflow-hidden">
-      <CardHeader className="pb-3 bg-black border-b border-purple-500/30">
+      <CardHeader className="pb-2 sm:pb-3 bg-black border-b border-purple-500/30">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm text-cyan-400 flex items-center">
-            <FolderOpen className="h-4 w-4 mr-2" />
-            File Manager
+          <CardTitle className="text-xs sm:text-sm text-cyan-400 flex items-center">
+            <FolderOpen className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">File Manager</span>
+            <span className="sm:hidden">Files</span>
           </CardTitle>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <Button
               variant="ghost"
               size="sm"
@@ -388,51 +399,51 @@ export default function FileManagerPanel({ sessionId }: FileManagerPanelProps) {
                 e.preventDefault();
                 refetchFiles();
               }}
-              className="p-1 h-7 w-7 text-gray-400 hover:text-cyan-400"
+              className="p-1 h-6 w-6 sm:h-7 sm:w-7 text-gray-400 hover:text-cyan-400"
             >
-              <RefreshCw className="h-3 w-3" />
+              <RefreshCw className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={triggerFileUpload}
-              className="p-1 h-7 w-7 text-gray-400 hover:text-cyan-400"
+              className="p-1 h-6 w-6 sm:h-7 sm:w-7 text-gray-400 hover:text-cyan-400"
               disabled={uploadFileMutation.isPending}
             >
-              <Upload className="h-3 w-3" />
+              <Upload className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowNewFileInput(!showNewFileInput)}
-              className="p-1 h-7 w-7 text-gray-400 hover:text-cyan-400"
+              className="p-1 h-6 w-6 sm:h-7 sm:w-7 text-gray-400 hover:text-cyan-400"
             >
-              <Plus className="h-3 w-3" />
+              <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             </Button>
           </div>
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center space-x-2 mt-3">
+        <div className="flex items-center space-x-1 sm:space-x-2 mt-2 sm:mt-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigateToPath("")}
-            className="p-1 h-7 w-7 text-gray-400 hover:text-cyan-400"
+            className="p-1 h-6 w-6 sm:h-7 sm:w-7 text-gray-400 hover:text-cyan-400"
           >
-            <Home className="h-3 w-3" />
+            <Home className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
           </Button>
           {currentPath && (
             <Button
               variant="ghost"
               size="sm"
               onClick={navigateUp}
-              className="p-1 h-7 w-7 text-gray-400 hover:text-cyan-400"
+              className="p-1 h-6 w-6 sm:h-7 sm:w-7 text-gray-400 hover:text-cyan-400"
             >
-              <ChevronLeft className="h-3 w-3" />
+              <ChevronLeft className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             </Button>
           )}
-          <div className="flex-1 text-xs text-purple-300 bg-gray-800/30 px-2 py-1 rounded border border-gray-600/50">
+          <div className="flex-1 text-[10px] sm:text-xs text-purple-300 bg-gray-800/30 px-2 py-1 rounded border border-gray-600/50 truncate">
             {getDisplayPath()}
           </div>
         </div>
@@ -440,12 +451,12 @@ export default function FileManagerPanel({ sessionId }: FileManagerPanelProps) {
         {/* Search */}
         <div className="flex items-center space-x-2 mt-2">
           <div className="relative flex-1">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-2.5 w-2.5 sm:h-3 sm:w-3 text-gray-400" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search files..."
-              className="pl-7 h-8 bg-gray-800/30 border-gray-600/50 text-xs text-cyan-100 placeholder-gray-400"
+              className="pl-6 sm:pl-7 h-6 sm:h-8 bg-gray-800/30 border-gray-600/50 text-[10px] sm:text-xs text-cyan-100 placeholder-gray-400"
             />
           </div>
         </div>

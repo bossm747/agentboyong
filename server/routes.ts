@@ -185,16 +185,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/files/:sessionId/tree", async (req, res) => {
     try {
       const { sessionId } = req.params;
-      const services = sessionServices.get(sessionId);
+      
+      // Ensure session and services exist
+      await ensureParengBoyongSession(sessionId, 'demo_user');
+      let services = sessionServices.get(sessionId);
       
       if (!services) {
-        return res.status(404).json({ error: "Session not found" });
+        // Create new session services if they don't exist
+        const fileSystem = new FileSystemService(sessionId);
+        const terminal = new TerminalService();
+        await fileSystem.ensureWorkspaceExists();
+        services = { fileSystem, terminal };
+        sessionServices.set(sessionId, services);
       }
 
       const fileTree = await services.fileSystem.getFileTree();
       res.json(fileTree);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get file tree" });
+      console.error('File tree error:', error);
+      // Return empty array instead of error for better UX
+      res.json([]);
     }
   });
 
@@ -207,9 +217,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "File path is required" });
       }
 
-      const services = sessionServices.get(sessionId);
+      // Ensure session and services exist
+      await ensureParengBoyongSession(sessionId, 'demo_user');
+      let services = sessionServices.get(sessionId);
+      
       if (!services) {
-        return res.status(404).json({ error: "Session not found" });
+        const fileSystem = new FileSystemService(sessionId);
+        const terminal = new TerminalService();
+        services = { fileSystem, terminal };
+        sessionServices.set(sessionId, services);
       }
 
       const content = await services.fileSystem.readFile(filePath);
