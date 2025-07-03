@@ -20,11 +20,9 @@ interface WebViewPanelProps {
 
 export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
-  const [viewportSize, setViewportSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const { data: applications = [], refetch: refetchApps } = useQuery({
+  const { data: applications = [] } = useQuery({
     queryKey: ['/api/applications', sessionId],
     queryFn: async () => {
       const response = await fetch(`/api/applications/${sessionId}`);
@@ -68,103 +66,32 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
     }
   };
 
-  return (
-    <div className="w-full h-full flex flex-col bg-black overflow-hidden">
-      {/* Mobile-optimized Controls at Top for better UX */}
-      <div className="bg-black border-b border-purple-500/30 px-3 py-2 flex-shrink-0 lg:order-2 lg:border-t lg:border-b-0">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm text-cyan-400 flex items-center font-semibold">
-            <Globe className="h-4 w-4 mr-2" />
-            App Preview
-          </h3>
-          <div className="flex items-center space-x-1">
-            {/* Viewport Controls */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewportSize('mobile')}
-              className={`p-1 h-6 w-6 ${viewportSize === 'mobile' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
-            >
-              <Smartphone className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewportSize('tablet')}
-              className={`p-1 h-6 w-6 ${viewportSize === 'tablet' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
-            >
-              <Tablet className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewportSize('desktop')}
-              className={`p-1 h-6 w-6 ${viewportSize === 'desktop' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
-            >
-              <Monitor className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={refreshIframe} className="p-1 h-6 w-6 text-gray-400">
-              <RefreshCw className="h-3 w-3" />
-            </Button>
-            <Button variant="ghost" size="sm" onClick={openInNewTab} className="p-1 h-6 w-6 text-gray-400">
-              <ExternalLink className="h-3 w-3" />
-            </Button>
-          </div>
+  if (!selectedApp) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <div className="text-gray-400 text-center">
+          <Globe className="h-12 w-12 mx-auto mb-3" />
+          <p className="text-sm">No running applications</p>
         </div>
-
-        {/* Running Apps */}
-        {runningApps.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {runningApps.map((app: Application) => (
-              <button
-                key={app.id}
-                onClick={() => setSelectedApp(app)}
-                className={`px-2 py-1 rounded text-xs transition-all ${
-                  selectedApp?.id === app.id
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-400/50'
-                    : 'bg-gray-800/50 text-gray-400 border border-gray-600/50'
-                }`}
-              >
-                <div className="flex items-center space-x-1">
-                  <span>{app.name}</span>
-                  <Badge className={`px-1 py-0 text-[9px] ${getStatusColor(app.status)}`}>
-                    {app.status}
-                  </Badge>
-                  <span className="text-purple-300">:{app.port}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
+    );
+  }
 
-      {/* Content Area - Optimized for mobile full screen */}
-      <div className="flex-1 overflow-hidden lg:order-1 min-h-0">
-        {selectedApp ? (
-          <div className="w-full h-full">
-            <iframe
-              ref={iframeRef}
-              src={selectedApp.url}
-              className="w-full h-full border-0 bg-white block"
-              title={`${selectedApp.name} Preview`}
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
-              loading="lazy"
-              onLoad={() => console.log(`${selectedApp.name} loaded successfully`)}
-              onError={(e) => console.error(`Failed to load ${selectedApp.name}`)}
-            />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-center">
-            <div className="text-gray-400">
-              <Globe className="h-12 w-12 mx-auto mb-3" />
-              <p className="text-sm">No running applications</p>
-              <p className="text-xs text-purple-300 mt-2">
-                Create an app with Pareng Boyong to see it here
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+  return (
+    <iframe
+      ref={iframeRef}
+      src={selectedApp.url}
+      className="w-full h-full border-0 block"
+      title={`${selectedApp.name} Preview`}
+      sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
+      onLoad={() => console.log(`${selectedApp.name} loaded`)}
+      style={{ 
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%'
+      }}
+    />
   );
 }

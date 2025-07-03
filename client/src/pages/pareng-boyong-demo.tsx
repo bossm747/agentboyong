@@ -678,7 +678,7 @@ export default function ParengBoyongDemo() {
               </div>
             </TabsContent>
 
-            <TabsContent value="webview" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
+            <TabsContent value="webview" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden relative">
               <WebViewPanel sessionId={currentContext} />
             </TabsContent>
 
