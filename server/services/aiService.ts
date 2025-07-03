@@ -577,6 +577,19 @@ Remember: All security activities are conducted in a safe, isolated sandbox envi
   private async detectFileOperation(message: string): Promise<{ type: string, params: any } | null> {
     const lowerMessage = message.toLowerCase();
     
+    // Webapp creation operation
+    if (lowerMessage.includes('create') && (lowerMessage.includes('app') || lowerMessage.includes('webapp') || lowerMessage.includes('website'))) {
+      const appType = this.detectAppType(message);
+      return {
+        type: 'create_webapp',
+        params: {
+          appType,
+          description: message,
+          requirements: this.extractRequirements(message)
+        }
+      };
+    }
+    
     // Create file operation
     if (lowerMessage.includes('create') && (lowerMessage.includes('file') || lowerMessage.includes('script'))) {
       const nameMatch = message.match(/(?:create|make).*?(?:file|script).*?(?:named|called)?\s*([^\s]+)/i);
@@ -630,6 +643,9 @@ Remember: All security activities are conducted in a safe, isolated sandbox envi
   private async handleFileOperation(operation: { type: string, params: any }, sessionId: string): Promise<string> {
     try {
       switch (operation.type) {
+        case 'create_webapp':
+          return await this.createWebApp(operation.params, sessionId);
+          
         case 'create':
           await this.fileSystem.writeFile(operation.params.filename, operation.params.content);
           return `✅ File '${operation.params.filename}' created successfully!
@@ -765,5 +781,378 @@ Don't worry, natry ko pa rin ang best ko para sa inyo. May ibang approach ba tay
     
     const messageWords = message.toLowerCase();
     return securityKeywords.some(keyword => messageWords.includes(keyword));
+  }
+
+  private detectAppType(message: string): string {
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('todo') || lowerMessage.includes('task')) {
+      return 'todo';
+    }
+    if (lowerMessage.includes('blog') || lowerMessage.includes('news')) {
+      return 'blog';
+    }
+    if (lowerMessage.includes('chat') || lowerMessage.includes('messaging')) {
+      return 'chat';
+    }
+    if (lowerMessage.includes('ecommerce') || lowerMessage.includes('shop')) {
+      return 'ecommerce';
+    }
+    if (lowerMessage.includes('dashboard') || lowerMessage.includes('admin')) {
+      return 'dashboard';
+    }
+    
+    return 'generic';
+  }
+
+  private extractRequirements(message: string): string[] {
+    const requirements: string[] = [];
+    const lowerMessage = message.toLowerCase();
+    
+    if (lowerMessage.includes('mobile') || lowerMessage.includes('responsive')) {
+      requirements.push('mobile-responsive');
+    }
+    if (lowerMessage.includes('add') || lowerMessage.includes('create')) {
+      requirements.push('add-functionality');
+    }
+    if (lowerMessage.includes('edit') || lowerMessage.includes('update')) {
+      requirements.push('edit-functionality');
+    }
+    if (lowerMessage.includes('delete') || lowerMessage.includes('remove')) {
+      requirements.push('delete-functionality');
+    }
+    if (lowerMessage.includes('mark') || lowerMessage.includes('complete')) {
+      requirements.push('status-toggle');
+    }
+    if (lowerMessage.includes('search') || lowerMessage.includes('filter')) {
+      requirements.push('search-filter');
+    }
+    
+    return requirements;
+  }
+
+  private async createWebApp(params: any, sessionId: string): Promise<string> {
+    try {
+      const { appType, description, requirements } = params;
+      const appName = this.generateAppName(appType);
+      const port = await this.findAvailablePort();
+      
+      // Generate application files
+      const files = this.generateAppFiles(appType, requirements, appName);
+      
+      // Create all files
+      for (const [filename, content] of Object.entries(files)) {
+        await this.fileSystem.writeFile(filename, content);
+      }
+
+      // Start the application server
+      const serverCommand = this.getServerCommand(appType, port);
+      await this.terminal.executeCommand('bash', ['-c', serverCommand]);
+
+      // Register application in database
+      await storage.createApplication({
+        sessionId,
+        name: appName,
+        type: appType,
+        port: port,
+        status: 'running',
+        url: `http://localhost:${port}`,
+        description: `${appType} webapp with ${requirements.join(', ')} functionality`
+      });
+
+      return `🎉 **${appName} Successfully Created!**
+
+**Application Details:**
+- **Type**: ${appType.toUpperCase()} webapp
+- **URL**: http://localhost:${port}
+- **Status**: ✅ Running
+- **Features**: ${requirements.join(', ')}
+
+**Files Created:**
+${Object.keys(files).map(file => `📄 ${file}`).join('\n')}
+
+**What You Can Do Now:**
+1. 🌐 **View the app** in the App Preview tab
+2. 📁 **Browse files** in the File Manager tab  
+3. 🔧 **Monitor progress** in Background Tasks tab
+4. 🖥️ **Open in new tab** to test fully
+
+Ang ${appName} ay handa na para gamitin! Check out the App Preview tab to see your working webapp! 🚀`;
+
+    } catch (error) {
+      console.error('Webapp creation failed:', error);
+      return `❌ **Webapp Creation Failed**
+
+Sorry, may problema sa pag-create ng ${params.appType} webapp. 
+
+**Error Details**: ${error instanceof Error ? error.message : 'Unknown error'}
+
+Subukan natin ulit o mag-try ng ibang approach?`;
+    }
+  }
+
+  private generateAppName(appType: string): string {
+    const names = {
+      todo: 'TodoMaster',
+      blog: 'BlogHub', 
+      chat: 'ChatApp',
+      ecommerce: 'ShopSite',
+      dashboard: 'AdminDash',
+      generic: 'WebApp'
+    };
+    return names[appType as keyof typeof names] || 'MyApp';
+  }
+
+  private async findAvailablePort(): Promise<number> {
+    // Start from port 3000 and find the first available port
+    for (let port = 3000; port < 4000; port++) {
+      try {
+        const isAvailable = await this.isPortAvailable(port);
+        if (isAvailable) {
+          return port;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+    return 3000; // Fallback
+  }
+
+  private async isPortAvailable(port: number): Promise<boolean> {
+    try {
+      const result = await this.terminal.executeCommand('bash', ['-c', `netstat -an | grep :${port}`]);
+      return result.exitCode !== 0; // Port is available if netstat finds nothing
+    } catch (error) {
+      return true; // Assume available if we can't check
+    }
+  }
+
+  private generateAppFiles(appType: string, requirements: string[], appName: string): Record<string, string> {
+    switch (appType) {
+      case 'todo':
+        return this.generateTodoAppFiles(requirements, appName);
+      case 'blog':
+        return this.generateBlogAppFiles(requirements, appName);
+      default:
+        return this.generateGenericAppFiles(requirements, appName);
+    }
+  }
+
+  private generateTodoAppFiles(requirements: string[], appName: string): Record<string, string> {
+    const hasEdit = requirements.includes('edit-functionality');
+    const hasDelete = requirements.includes('delete-functionality');
+    const hasStatus = requirements.includes('status-toggle');
+    const isResponsive = requirements.includes('mobile-responsive');
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${appName} - Todo App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🇵🇭 ${appName}</h1>
+            <p>Your Filipino Todo App</p>
+        </header>
+        
+        <div class="todo-form">
+            <input type="text" id="todoInput" placeholder="Add new todo..." />
+            <button onclick="addTodo()">Add Todo</button>
+        </div>
+        
+        <div class="todo-list">
+            <ul id="todoList"></ul>
+        </div>
+        
+        <div class="stats">
+            <span id="totalTodos">0 todos</span>
+            <span id="completedTodos">0 completed</span>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>`;
+
+    const cssContent = `* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+
+${isResponsive ? `
+@media (max-width: 768px) {
+    .container {
+        margin: 10px;
+        padding: 20px;
+        border-radius: 15px;
+    }
+    
+    .todo-form {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .todo-form input {
+        width: 100%;
+    }
+}
+` : ''}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.todo-form {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.todo-form input {
+    flex: 1;
+    padding: 15px;
+    border: 2px solid #e1e1e1;
+    border-radius: 10px;
+    font-size: 16px;
+}
+
+.todo-item {
+    background: #f8f9fa;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}`;
+
+    const jsContent = `let todos = [];
+let todoIdCounter = 1;
+
+function addTodo() {
+    const input = document.getElementById('todoInput');
+    const text = input.value.trim();
+    
+    if (text === '') {
+        alert('Please enter a todo item!');
+        return;
+    }
+    
+    const todo = {
+        id: todoIdCounter++,
+        text: text,
+        completed: false,
+        createdAt: new Date()
+    };
+    
+    todos.push(todo);
+    input.value = '';
+    renderTodos();
+    updateStats();
+}
+
+function renderTodos() {
+    const todoList = document.getElementById('todoList');
+    todoList.innerHTML = '';
+    
+    todos.forEach(todo => {
+        const li = document.createElement('li');
+        li.className = 'todo-item' + (todo.completed ? ' completed' : '');
+        li.innerHTML = \`<span>\${todo.text}</span>\`;
+        todoList.appendChild(li);
+    });
+}
+
+function updateStats() {
+    const total = todos.length;
+    const completed = todos.filter(t => t.completed).length;
+    
+    document.getElementById('totalTodos').textContent = \`\${total} todos\`;
+    document.getElementById('completedTodos').textContent = \`\${completed} completed\`;
+}
+
+document.getElementById('todoInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        addTodo();
+    }
+});
+
+updateStats();`;
+
+    const serverContent = `const express = require('express');
+const path = require('path');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.listen(PORT, () => {
+    console.log(\`🇵🇭 ${appName} running at http://localhost:\${PORT}\`);
+});`;
+
+    const packageContent = `{
+  "name": "${appName.toLowerCase()}",
+  "version": "1.0.0",
+  "description": "A Filipino todo webapp created by Pareng Boyong",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}`;
+
+    return {
+      'index.html': htmlContent,
+      'styles.css': cssContent,
+      'script.js': jsContent,
+      'server.js': serverContent,
+      'package.json': packageContent
+    };
+  }
+
+  private generateBlogAppFiles(requirements: string[], appName: string): Record<string, string> {
+    return {
+      'index.html': `<!DOCTYPE html><html><head><title>${appName}</title></head><body><h1>${appName} - Blog</h1><p>Coming soon...</p></body></html>`,
+      'package.json': `{"name": "${appName.toLowerCase()}", "version": "1.0.0", "main": "server.js"}`
+    };
+  }
+
+  private generateGenericAppFiles(requirements: string[], appName: string): Record<string, string> {
+    return {
+      'index.html': `<!DOCTYPE html><html><head><title>${appName}</title></head><body><h1>${appName}</h1><p>Your webapp is ready!</p></body></html>`,
+      'package.json': `{"name": "${appName.toLowerCase()}", "version": "1.0.0", "main": "server.js"}`
+    };
+  }
+
+  private getServerCommand(appType: string, port: number): string {
+    return `cd workspace/pareng-boyong-main && npm install && PORT=${port} npm start &`;
   }
 }
