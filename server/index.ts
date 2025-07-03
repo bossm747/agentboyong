@@ -1,8 +1,12 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import path from "path";
 
 const app = express();
+
+// Serve attached assets statically
+app.use('/attached_assets', express.static(path.join(process.cwd(), 'attached_assets')));
 
 // Special route that bypasses JSON parsing - Agent Zero sends "null" as body
 app.post('/settings_get', (req: Request, res: Response) => {

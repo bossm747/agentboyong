@@ -12,7 +12,7 @@ import WebViewPanel from "@/components/webview-panel";
 import BackgroundTasksPanel from "@/components/background-tasks-panel";
 import FileManagerPanel from "@/components/file-manager-panel";
 import { TerminalPanel } from "@/components/terminal-panel";
-import innovateHubLogo from "@assets/innovatehub_1751536111664.png";
+// import innovateHubLogo from "@assets/innovatehub_1751536111664.png";
 
 export default function ParengBoyongDemo() {
   const [message, setMessage] = useState("");
@@ -146,9 +146,20 @@ export default function ParengBoyongDemo() {
             </Button>
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center shadow-lg shadow-cyan-400/50 border border-cyan-400/50 overflow-hidden bg-white">
               <img 
-                src={innovateHubLogo} 
+                src="/attached_assets/innovatehub_1751536111664.png" 
                 alt="InnovateHub Logo" 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain p-0.5"
+                onLoad={() => console.log('InnovateHub logo loaded successfully')}
+                onError={(e) => {
+                  console.error('Logo failed to load from /attached_assets/innovatehub_1751536111664.png');
+                  // Keep the img element but show fallback
+                  const target = e.currentTarget as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = document.createElement('div');
+                  fallback.className = 'w-full h-full flex items-center justify-center text-black font-bold text-xs bg-gradient-to-r from-cyan-400 to-purple-500';
+                  fallback.textContent = '🇵🇭';
+                  target.parentElement?.appendChild(fallback);
+                }}
               />
             </div>
             <div className="min-w-0 flex-1">
@@ -425,7 +436,7 @@ export default function ParengBoyongDemo() {
               </div>
             </TabsContent>
 
-            <TabsContent value="webview" className="flex-1 m-0 p-1 sm:p-2 min-h-0">
+            <TabsContent value="webview" className="flex-1 m-0 p-0 min-h-0">
               <WebViewPanel sessionId={currentContext} />
             </TabsContent>
 

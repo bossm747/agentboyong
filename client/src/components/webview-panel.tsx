@@ -92,7 +92,7 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
 
   return (
     <div className="h-full flex flex-col bg-black border border-purple-500/30 rounded-lg overflow-hidden">
-      <CardHeader className="pb-2 sm:pb-3 bg-black border-b border-purple-500/30 px-2 py-2 sm:px-6 sm:py-4">
+      <CardHeader className="pb-2 sm:pb-3 bg-black border-b border-purple-500/30 px-2 py-2 sm:px-6 sm:py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-xs sm:text-sm text-cyan-400 flex items-center">
             <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
@@ -195,35 +195,25 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
         )}
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 relative overflow-hidden">
+      <CardContent className="flex-1 p-0 relative overflow-hidden min-h-0">
         {selectedApp ? (
-          <div className={`w-full h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''} ${viewportSize !== 'desktop' ? 'flex items-center justify-center bg-gray-900' : ''}`}>
-            <div 
-              className={`${viewportSize === 'desktop' ? 'w-full h-full' : 'border border-gray-600/50 rounded-lg overflow-hidden shadow-lg bg-white'}`}
+          <div className={`w-full h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''}`}>
+            <iframe
+              ref={iframeRef}
+              src={`/app-proxy/${sessionId}/todo`}
+              className="w-full h-full border-0 bg-white"
+              title={`${selectedApp.name} Preview`}
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
+              loading="lazy"
+              onLoad={() => console.log('Todo app loaded successfully')}
+              onError={(e) => console.error('Failed to load todo app')}
               style={{
-                width: viewportSize === 'desktop' ? '100%' : dimensions.width,
-                height: viewportSize === 'desktop' ? '100%' : dimensions.height,
-                maxWidth: viewportSize === 'desktop' ? '100%' : 'calc(100vw - 40px)',
-                maxHeight: viewportSize === 'desktop' ? '100%' : 'calc(100vh - 200px)'
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                display: 'block'
               }}
-            >
-              <iframe
-                ref={iframeRef}
-                src={`/app-proxy/${sessionId}/todo`}
-                className="w-full h-full border-0 bg-white"
-                title={`${selectedApp.name} Preview`}
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
-                loading="lazy"
-                onLoad={() => console.log('Todo app loaded successfully')}
-                onError={(e) => console.error('Failed to load todo app')}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                  display: 'block'
-                }}
-              />
-            </div>
+            />
           </div>
         ) : (
           <div className="flex items-center justify-center h-full text-center p-4">
