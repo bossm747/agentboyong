@@ -59,6 +59,8 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
     }
   };
 
+  const isDesktopView = viewportSize === 'desktop';
+
   const refreshIframe = () => {
     if (iframeRef.current) {
       iframeRef.current.src = iframeRef.current.src;
@@ -195,15 +197,9 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
 
       <CardContent className="flex-1 p-0 relative overflow-hidden">
         {selectedApp ? (
-          <div 
-            className={`${
-              isFullscreen 
-                ? 'fixed inset-0 z-50 bg-black' 
-                : 'w-full h-full'
-            } ${viewportSize === 'desktop' ? 'p-0' : 'flex items-center justify-center p-2'}`}
-          >
+          <div className={`w-full h-full ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : ''} ${viewportSize !== 'desktop' ? 'flex items-center justify-center bg-gray-900' : ''}`}>
             <div 
-              className={`${viewportSize === 'desktop' ? 'w-full h-full' : 'border border-gray-600/50 rounded-lg overflow-hidden shadow-lg'}`}
+              className={`${viewportSize === 'desktop' ? 'w-full h-full' : 'border border-gray-600/50 rounded-lg overflow-hidden shadow-lg bg-white'}`}
               style={{
                 width: viewportSize === 'desktop' ? '100%' : dimensions.width,
                 height: viewportSize === 'desktop' ? '100%' : dimensions.height,
@@ -214,15 +210,17 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
               <iframe
                 ref={iframeRef}
                 src={`/app-proxy/${sessionId}/todo`}
-                className="w-full h-full border-0 bg-white iframe-container"
+                className="w-full h-full border-0 bg-white"
                 title={`${selectedApp.name} Preview`}
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
                 loading="lazy"
                 onLoad={() => console.log('Todo app loaded successfully')}
                 onError={(e) => console.error('Failed to load todo app')}
                 style={{
-                  minHeight: '100%',
-                  overflow: 'hidden'
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  display: 'block'
                 }}
               />
             </div>
