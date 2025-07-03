@@ -1099,9 +1099,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 // Terminal command handler
 function handleTerminalCommand(command: string, sessionId: string, ws: WebSocket) {
-  const { spawn } = require('child_process');
-  const path = require('path');
-  
+  import('child_process').then(({ spawn }) => {
+    import('path').then((path) => {
+      executeTerminalCommand(command, sessionId, ws, spawn, path);
+    });
+  });
+}
+
+function executeTerminalCommand(command: string, sessionId: string, ws: WebSocket, spawn: any, path: any) {
   try {
     const workingDir = path.resolve(`./workspace/${sessionId}`);
     

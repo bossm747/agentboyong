@@ -122,30 +122,31 @@ export default function ParengBoyongDemo() {
   return (
     <div className="h-screen flex flex-col bg-black">
       {/* Header */}
-      <div className="bg-black border-b border-cyan-500/30 p-4 shadow-lg shadow-cyan-500/20">
+      <div className="bg-black border-b border-cyan-500/30 p-3 sm:p-4 shadow-lg shadow-cyan-500/20">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             {/* Mobile Menu Button */}
             <Button 
               variant="ghost" 
               size="sm" 
-              className="md:hidden text-cyan-400 hover:bg-cyan-500/20"
+              className="lg:hidden text-cyan-400 hover:bg-cyan-500/20 p-2"
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             >
-              {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {isSidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </Button>
-            <div className="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center font-bold text-sm shadow-lg shadow-cyan-400/50 border border-cyan-400/50">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shadow-lg shadow-cyan-400/50 border border-cyan-400/50">
               🇵🇭
             </div>
-            <div>
-              <h1 className="font-bold text-lg text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text">Pareng Boyong</h1>
-              <p className="text-sm text-cyan-300 hidden sm:block">Filipino AI AGI Super Agent by InnovateHub PH</p>
+            <div className="min-w-0 flex-1">
+              <h1 className="font-bold text-base sm:text-lg text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text truncate">Pareng Boyong</h1>
+              <p className="text-xs sm:text-sm text-cyan-300 hidden sm:block truncate">Filipino AI AGI Super Agent by InnovateHub PH</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="bg-green-400/20 text-green-400 border border-green-400/50 shadow-lg shadow-green-400/20 px-3 py-1 rounded-full text-sm flex items-center">
-              <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-              Online
+          <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="bg-green-400/20 text-green-400 border border-green-400/50 shadow-lg shadow-green-400/20 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm flex items-center">
+              <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full mr-1 sm:mr-2 animate-pulse"></div>
+              <span className="hidden xs:inline">Online</span>
+              <span className="xs:hidden">●</span>
             </div>
             <Button 
               variant="ghost" 
@@ -348,10 +349,10 @@ export default function ParengBoyongDemo() {
 
             <TabsContent value="chat" className="flex-1 flex flex-col m-0">
               {/* Chat Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black">
+              <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 sm:space-y-4 bg-black">
                 {messages.map((msg) => (
                   <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-lg p-4 ${
+                    <div className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-3 sm:p-4 text-sm sm:text-base ${
                       msg.type === 'user' 
                         ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 border border-cyan-400/50 text-cyan-100 shadow-lg shadow-cyan-500/30' 
                         : msg.type === 'system'
@@ -383,14 +384,14 @@ export default function ParengBoyongDemo() {
               </div>
 
               {/* Message Input */}
-              <div className="border-t border-purple-500/30 bg-black p-4">
-                <div className="flex space-x-2">
+              <div className="border-t border-purple-500/30 bg-black p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                   <Input
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
                     placeholder="Type your message to Pareng Boyong..."
-                    className="flex-1 bg-black border-cyan-500/50 text-cyan-100 placeholder-purple-400 focus:border-cyan-400 focus:ring-cyan-400/50"
+                    className="flex-1 bg-black border-cyan-500/50 text-cyan-100 placeholder-purple-400 focus:border-cyan-400 focus:ring-cyan-400/50 text-sm sm:text-base h-10 sm:h-auto"
                     disabled={isProcessing}
                   />
                   <Button 
