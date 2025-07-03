@@ -39,10 +39,14 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
   });
 
   const runningApps = applications.filter((app: Application) => app.status === 'running');
+  
+  console.log('All applications:', applications);
+  console.log('Running apps:', runningApps);
 
   useEffect(() => {
     if (runningApps.length > 0 && !selectedApp) {
       setSelectedApp(runningApps[0]);
+      console.log('Selected app:', runningApps[0]);
     }
   }, [runningApps, selectedApp]);
 
@@ -216,8 +220,10 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
                 src={selectedApp.url}
                 className="w-full h-full border-0"
                 title={`${selectedApp.name} Preview`}
-                sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+                sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads"
                 loading="lazy"
+                onLoad={() => console.log('Iframe loaded successfully')}
+                onError={(e) => console.error('Iframe error:', e)}
               />
             </div>
           </div>

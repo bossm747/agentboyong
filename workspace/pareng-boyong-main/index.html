@@ -5,347 +5,123 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Todo App - Pareng Boyong</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            min-height: 100vh; padding: 20px;
         }
-
         .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
+            max-width: 600px; margin: 0 auto; background: white;
+            border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden;
         }
-
         .header {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            padding: 30px;
-            text-align: center;
-            color: white;
+            padding: 30px; text-align: center; color: white;
         }
-
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .todo-input {
-            padding: 25px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-        }
-
+        .header h1 { font-size: 2.5rem; margin-bottom: 10px; font-weight: 700; }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+        .todo-input { padding: 25px; border-bottom: 1px solid #eee; }
+        .input-group { display: flex; gap: 10px; }
         #todoInput {
-            flex: 1;
-            padding: 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 16px;
-            outline: none;
-            transition: border-color 0.3s;
+            flex: 1; padding: 15px; border: 2px solid #e1e5e9;
+            border-radius: 10px; font-size: 16px; outline: none;
         }
-
-        #todoInput:focus {
-            border-color: #4facfe;
-        }
-
         #addBtn {
-            padding: 15px 25px;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
+            padding: 15px 25px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white; border: none; border-radius: 10px; cursor: pointer;
         }
-
-        #addBtn:hover {
-            transform: translateY(-2px);
-        }
-
-        .todo-list {
-            padding: 25px;
-            min-height: 300px;
-        }
-
+        .todo-list { padding: 25px; min-height: 300px; }
         .todo-item {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            margin-bottom: 10px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #4facfe;
-            transition: all 0.3s;
+            display: flex; align-items: center; padding: 15px; margin-bottom: 10px;
+            background: #f8f9fa; border-radius: 10px; border-left: 4px solid #4facfe;
         }
-
-        .todo-item:hover {
-            transform: translateX(5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .todo-item.completed {
-            opacity: 0.6;
-            border-left-color: #28a745;
-        }
-
-        .todo-item.completed .todo-text {
-            text-decoration: line-through;
-            color: #6c757d;
-        }
-
-        .todo-checkbox {
-            margin-right: 15px;
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .todo-text {
-            flex: 1;
-            font-size: 16px;
-            color: #333;
-        }
-
+        .todo-checkbox { margin-right: 15px; width: 20px; height: 20px; cursor: pointer; }
+        .todo-text { flex: 1; font-size: 16px; color: #333; }
         .delete-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
+            background: #dc3545; color: white; border: none; padding: 8px 12px;
+            border-radius: 6px; cursor: pointer;
         }
-
-        .delete-btn:hover {
-            background: #c82333;
-        }
-
-        .stats {
-            padding: 20px 25px;
-            background: #f8f9fa;
-            border-top: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            color: #6c757d;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-
-        .empty-state img {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-
-        @media (max-width: 640px) {
-            .container {
-                margin: 10px;
-                border-radius: 10px;
-            }
-            
-            .header {
-                padding: 20px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .todo-input {
-                padding: 20px;
-            }
-            
-            .input-group {
-                flex-direction: column;
-            }
-            
-            #addBtn {
-                padding: 12px;
-            }
-        }
+        .stats { padding: 20px; background: #f8f9fa; display: flex; justify-content: space-between; }
+        .empty-state { text-align: center; padding: 40px; color: #6c757d; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <h1>🇵🇭 Todo App</h1>
-            <p>Gawa ni Pareng Boyong - Filipino AI AGI</p>
+            <p>Gawa ni Pareng Boyong - Real Working App!</p>
         </div>
-        
         <div class="todo-input">
             <div class="input-group">
                 <input type="text" id="todoInput" placeholder="Anong gagawin mo ngayon?">
-                <button id="addBtn">Idagdag</button>
+                <button id="addBtn" onclick="addTodo()">Idagdag</button>
             </div>
         </div>
-        
-        <div class="todo-list" id="todoList">
-            <div class="empty-state" id="emptyState">
-                <div style="font-size: 3rem; margin-bottom: 10px;">📝</div>
-                <h3>Walang tasks pa</h3>
-                <p>Magdagdag ng mga gawain para magsimula!</p>
-            </div>
-        </div>
-        
+        <div class="todo-list" id="todoList"></div>
         <div class="stats" id="stats" style="display: none;">
             <span>Total: <span id="totalCount">0</span></span>
             <span>Completed: <span id="completedCount">0</span></span>
-            <span>Remaining: <span id="remainingCount">0</span></span>
         </div>
     </div>
-
     <script>
         let todos = [];
         let todoId = 1;
-
-        const todoInput = document.getElementById('todoInput');
-        const addBtn = document.getElementById('addBtn');
-        const todoList = document.getElementById('todoList');
-        const emptyState = document.getElementById('emptyState');
-        const stats = document.getElementById('stats');
-        const totalCount = document.getElementById('totalCount');
-        const completedCount = document.getElementById('completedCount');
-        const remainingCount = document.getElementById('remainingCount');
-
-        // Load from localStorage
-        function loadTodos() {
-            const saved = localStorage.getItem('pareng-boyong-todos');
-            if (saved) {
-                todos = JSON.parse(saved);
-                todoId = Math.max(...todos.map(t => t.id), 0) + 1;
-            }
-            renderTodos();
-        }
-
-        // Save to localStorage
-        function saveTodos() {
-            localStorage.setItem('pareng-boyong-todos', JSON.stringify(todos));
-        }
-
-        // Add new todo
+        
         function addTodo() {
-            const text = todoInput.value.trim();
-            if (text === '') return;
-
-            const todo = {
-                id: todoId++,
-                text: text,
-                completed: false,
-                createdAt: new Date().toISOString()
-            };
-
-            todos.unshift(todo);
-            todoInput.value = '';
-            saveTodos();
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            if (!text) return;
+            todos.unshift({id: todoId++, text, completed: false});
+            input.value = '';
             renderTodos();
         }
-
-        // Toggle todo completion
+        
         function toggleTodo(id) {
             const todo = todos.find(t => t.id === id);
-            if (todo) {
-                todo.completed = !todo.completed;
-                saveTodos();
-                renderTodos();
-            }
+            if (todo) { todo.completed = !todo.completed; renderTodos(); }
         }
-
-        // Delete todo
+        
         function deleteTodo(id) {
             todos = todos.filter(t => t.id !== id);
-            saveTodos();
             renderTodos();
         }
-
-        // Render todos
+        
         function renderTodos() {
+            const list = document.getElementById('todoList');
+            const stats = document.getElementById('stats');
+            
             if (todos.length === 0) {
-                emptyState.style.display = 'block';
+                list.innerHTML = '<div class="empty-state"><div style="font-size: 3rem;">📝</div><h3>Walang tasks pa</h3><p>Magdagdag para magsimula!</p></div>';
                 stats.style.display = 'none';
-                todoList.innerHTML = '<div class="empty-state" id="emptyState"><div style="font-size: 3rem; margin-bottom: 10px;">📝</div><h3>Walang tasks pa</h3><p>Magdagdag ng mga gawain para magsimula!</p></div>';
                 return;
             }
-
-            emptyState.style.display = 'none';
+            
             stats.style.display = 'flex';
-
             const todosHTML = todos.map(todo => `
-                <div class="todo-item ${todo.completed ? 'completed' : ''}">
-                    <input 
-                        type="checkbox" 
-                        class="todo-checkbox" 
-                        ${todo.completed ? 'checked' : ''} 
-                        onchange="toggleTodo(${todo.id})"
-                    >
-                    <span class="todo-text">${todo.text}</span>
+                <div class="todo-item">
+                    <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo(${todo.id})">
+                    <span class="todo-text" style="${todo.completed ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${todo.text}</span>
                     <button class="delete-btn" onclick="deleteTodo(${todo.id})">Delete</button>
                 </div>
             `).join('');
-
-            todoList.innerHTML = todosHTML;
-
-            // Update stats
-            const total = todos.length;
-            const completed = todos.filter(t => t.completed).length;
-            const remaining = total - completed;
-
-            totalCount.textContent = total;
-            completedCount.textContent = completed;
-            remainingCount.textContent = remaining;
+            list.innerHTML = todosHTML;
+            
+            document.getElementById('totalCount').textContent = todos.length;
+            document.getElementById('completedCount').textContent = todos.filter(t => t.completed).length;
         }
-
-        // Event listeners
-        addBtn.addEventListener('click', addTodo);
-        todoInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                addTodo();
-            }
+        
+        document.getElementById('todoInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
         });
-
-        // Initialize
-        loadTodos();
-
-        // Add some demo data if empty
-        if (todos.length === 0) {
-            todos = [
-                { id: 1, text: 'Makipag-chat kay Pareng Boyong', completed: true, createdAt: new Date().toISOString() },
-                { id: 2, text: 'Subukan ang todo app', completed: false, createdAt: new Date().toISOString() },
-                { id: 3, text: 'Mag-explore ng mga features', completed: false, createdAt: new Date().toISOString() }
-            ];
-            todoId = 4;
-            saveTodos();
-            renderTodos();
-        }
+        
+        // Demo data to prove it works
+        todos = [
+            { id: 1, text: 'Pareng Boyong created this app!', completed: false },
+            { id: 2, text: 'Test the functionality', completed: false }
+        ];
+        todoId = 3;
+        renderTodos();
     </script>
 </body>
 </html>
