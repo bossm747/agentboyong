@@ -1094,6 +1094,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: 'Knowledge imported to runtime sandbox' });
   });
 
+  // Serve todo app directly from workspace
+  app.get('/app-proxy/:sessionId/todo', async (req: Request, res: Response) => {
+    const { sessionId } = req.params;
+    const todoAppPath = `./workspace/${sessionId}/index.html`;
+    
+    try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
+      if (fs.existsSync(todoAppPath)) {
+        const content = fs.readFileSync(todoAppPath, 'utf8');
+        
+        // Set proper headers for iframe embedding
+        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+        res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+        res.setHeader('Content-Type', 'text/html');
+        
+        res.send(content);
+      } else {
+        res.status(404).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>📋 Todo App Not Found</h1><p>The todo app hasn't been created yet. Ask Pareng Boyong to create one!</p></body></html>`);
+      }
+    } catch (error) {
+      console.error('Todo app serve error:', error);
+      res.status(500).send(`<html><body style="font-family: Arial, sans-serif; padding: 20px; text-align: center;"><h1>🚫 Error Loading Todo App</h1><p>Error: ${error}</p></body></html>`);
+    }
+  });
+
   return httpServer;
 }
 

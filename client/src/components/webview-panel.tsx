@@ -213,19 +213,13 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
             >
               <iframe
                 ref={iframeRef}
-                src={selectedApp.url}
+                src={`/app-proxy/${sessionId}/todo`}
                 className="w-full h-full border-0"
                 title={`${selectedApp.name} Preview`}
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
                 loading="lazy"
-                onLoad={() => {
-                  console.log('Iframe loaded successfully for:', selectedApp.url);
-                  console.log('Iframe content window:', iframeRef.current?.contentWindow);
-                }}
-                onError={(e) => {
-                  console.error('Iframe error:', e);
-                  console.error('Failed to load:', selectedApp.url);
-                }}
+                onLoad={() => console.log('Todo app loaded successfully')}
+                onError={(e) => console.error('Failed to load todo app')}
               />
             </div>
           </div>
