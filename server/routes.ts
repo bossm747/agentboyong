@@ -503,11 +503,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return;
     }
 
-    const services = sessionServices.get(sessionId);
-    if (!services) {
-      ws.close(1008, 'Session not found');
-      return;
-    }
+    // Initialize session services asynchronously
+    const initializeSession = async () => {
+      let services = sessionServices.get(sessionId);
+      if (!services) {
+        try {
+          await ensureParengBoyongSession(sessionId, 'demo_user');
+          const fileSystem = new FileSystemService(sessionId);
+          const terminal = new TerminalService();
+          await fileSystem.ensureWorkspaceExists();
+          services = { fileSystem, terminal };
+          sessionServices.set(sessionId, services);
+          console.log(`Created new session services for: ${sessionId}`);
+        } catch (error) {
+          console.error('Failed to create session services:', error);
+          ws.close(1008, 'Failed to create session');
+          return null;
+        }
+      }
+      return services;
+    };
+
+    // Initialize session and set up handlers
+    initializeSession().then((services) => {
+      if (!services) return;
 
     let terminalId: string | null = null;
 
@@ -528,7 +547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Execute shell command
             const command = message.data?.command;
             if (command) {
-              executeShellCommand(command, sessionId, ws);
+              handleTerminalCommand(command, sessionId, ws);
             }
             break;
             
@@ -626,12 +645,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
 
-    // Send connection confirmation
-    ws.send(JSON.stringify({
-      type: 'connection:established',
-      sessionId,
-      timestamp: Date.now(),
-    }));
+      // Send connection confirmation
+      ws.send(JSON.stringify({
+        type: 'connection:established',
+        sessionId,
+        timestamp: Date.now(),
+      }));
+    }).catch((error) => {
+      console.error('Session initialization failed:', error);
+      ws.close(1008, 'Session initialization failed');
+    });
   });
 
   // Real AI Chat endpoint for Pareng Boyong
@@ -1074,63 +1097,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Shell command execution function
-async function executeShellCommand(command: string, sessionId: string, ws: WebSocket) {
+// Terminal command handler
+function handleTerminalCommand(command: string, sessionId: string, ws: WebSocket) {
   const { spawn } = require('child_process');
   const path = require('path');
   
   try {
     const workingDir = path.resolve(`./workspace/${sessionId}`);
     
-    // Parse command and arguments
-    const args = command.split(' ');
-    const cmd = args[0];
-    const cmdArgs = args.slice(1);
-    
-    // Create child process
-    const childProcess = spawn(cmd, cmdArgs, {
+    // Create child process with shell support
+    const childProcess = spawn(command, [], {
       cwd: workingDir,
       stdio: 'pipe',
       shell: true
     });
     
+    let hasOutput = false;
+    
     // Handle stdout
-    childProcess.stdout.on('data', (data) => {
-      ws.send(JSON.stringify({
-        type: 'terminal_output',
-        data: data.toString()
-      }));
+    childProcess.stdout.on('data', (data: any) => {
+      hasOutput = true;
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'terminal_output',
+          data: data.toString()
+        }));
+      }
     });
     
     // Handle stderr
-    childProcess.stderr.on('data', (data) => {
-      ws.send(JSON.stringify({
-        type: 'terminal_error',
-        data: data.toString()
-      }));
+    childProcess.stderr.on('data', (data: any) => {
+      hasOutput = true;
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'terminal_error',
+          data: data.toString()
+        }));
+      }
     });
     
     // Handle process exit
-    childProcess.on('close', (code) => {
-      ws.send(JSON.stringify({
-        type: 'terminal_complete',
-        data: `Command finished with exit code ${code}`
-      }));
+    childProcess.on('close', (code: any) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        if (!hasOutput && code === 0) {
+          // Command executed successfully but no output
+          ws.send(JSON.stringify({
+            type: 'terminal_output',
+            data: ''
+          }));
+        }
+        ws.send(JSON.stringify({
+          type: 'terminal_complete',
+          data: `Exit code: ${code}`
+        }));
+      }
     });
     
     // Handle process error
-    childProcess.on('error', (error) => {
-      ws.send(JSON.stringify({
-        type: 'terminal_error',
-        data: `Error: ${error.message}`
-      }));
+    childProcess.on('error', (error: any) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'terminal_error',
+          data: `Command not found: ${error.message}`
+        }));
+      }
     });
     
-  } catch (error) {
-    ws.send(JSON.stringify({
-      type: 'terminal_error',
-      data: `Failed to execute command: ${error.message}`
-    }));
+  } catch (error: any) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'terminal_error',
+        data: `Failed to execute: ${error.message}`
+      }));
+    }
   }
 }
 
