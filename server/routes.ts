@@ -876,6 +876,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 // Legacy function - keeping for compatibility but directing to main interface
 async function processParengBoyongMessage(message: string, sessionId: string, services: any) {
   const response = { message: '', data: null, files: null };
+  const lowerMessage = message.toLowerCase();
   
   // Code execution requests
   if (lowerMessage.includes('run') || lowerMessage.includes('execute') || lowerMessage.includes('code') || 
