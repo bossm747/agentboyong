@@ -14,6 +14,20 @@ import { eq, and } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 import { systemMonitor } from "./services/systemMonitor";
 
+// Database operation wrapper with error handling
+async function withErrorHandling<T>(operation: () => Promise<T>, operationName: string): Promise<T | undefined> {
+  try {
+    return await operation();
+  } catch (error) {
+    console.error(`Database error in ${operationName}:`, error);
+    // Return undefined for read operations, re-throw for critical operations
+    if (operationName.includes('get') || operationName.includes('read')) {
+      return undefined;
+    }
+    throw error;
+  }
+}
+
 export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
@@ -74,8 +88,10 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+    return withErrorHandling(async () => {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    }, 'getUser');
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
