@@ -90,13 +90,13 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
 
   return (
     <div className="h-full flex flex-col bg-black border border-purple-500/30 rounded-lg overflow-hidden">
-      <CardHeader className="pb-3 bg-black border-b border-purple-500/30">
+      <CardHeader className="pb-2 sm:pb-3 bg-black border-b border-purple-500/30 px-2 py-2 sm:px-6 sm:py-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm text-cyan-400 flex items-center">
-            <Globe className="h-4 w-4 mr-2" />
+          <CardTitle className="text-xs sm:text-sm text-cyan-400 flex items-center">
+            <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             App Preview
           </CardTitle>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             {/* Viewport Size Controls */}
             <div className="flex items-center space-x-1">
               <Button
@@ -167,25 +167,25 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
           </div>
         </div>
 
-        {/* App Selection */}
+        {/* App Selection - Compact for mobile */}
         {runningApps.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-1 sm:gap-2 mt-2 sm:mt-3">
             {runningApps.map((app: Application) => (
               <button
                 key={app.id}
                 onClick={() => setSelectedApp(app)}
-                className={`px-3 py-1 rounded-full text-xs transition-all duration-200 ${
+                className={`px-2 sm:px-3 py-1 rounded-full text-xs transition-all duration-200 ${
                   selectedApp?.id === app.id
                     ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-400/50'
                     : 'bg-gray-800/50 text-gray-400 border border-gray-600/50 hover:border-purple-400/50'
                 }`}
               >
-                <div className="flex items-center space-x-2">
-                  <span>{app.name}</span>
-                  <Badge className={`px-1 py-0 text-[10px] ${getStatusColor(app.status)}`}>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                  <span className="text-xs">{app.name}</span>
+                  <Badge className={`px-1 py-0 text-[9px] sm:text-[10px] ${getStatusColor(app.status)}`}>
                     {app.status}
                   </Badge>
-                  <span className="text-purple-300">:{app.port}</span>
+                  <span className="text-purple-300 text-xs">:{app.port}</span>
                 </div>
               </button>
             ))}
@@ -200,35 +200,39 @@ export default function WebViewPanel({ sessionId }: WebViewPanelProps) {
               isFullscreen 
                 ? 'fixed inset-0 z-50 bg-black' 
                 : 'w-full h-full'
-            } flex items-center justify-center`}
+            } ${viewportSize === 'desktop' ? 'p-0' : 'flex items-center justify-center p-2'}`}
           >
             <div 
-              className="border border-gray-600/50 rounded-lg overflow-hidden shadow-lg"
+              className={`${viewportSize === 'desktop' ? 'w-full h-full' : 'border border-gray-600/50 rounded-lg overflow-hidden shadow-lg'}`}
               style={{
-                width: dimensions.width,
-                height: isFullscreen ? '100vh' : 'calc(100% - 20px)',
-                maxWidth: '100%',
-                maxHeight: '100%'
+                width: viewportSize === 'desktop' ? '100%' : dimensions.width,
+                height: viewportSize === 'desktop' ? '100%' : dimensions.height,
+                maxWidth: viewportSize === 'desktop' ? '100%' : 'calc(100vw - 40px)',
+                maxHeight: viewportSize === 'desktop' ? '100%' : 'calc(100vh - 200px)'
               }}
             >
               <iframe
                 ref={iframeRef}
                 src={`/app-proxy/${sessionId}/todo`}
-                className="w-full h-full border-0"
+                className="w-full h-full border-0 bg-white iframe-container"
                 title={`${selectedApp.name} Preview`}
                 sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads allow-pointer-lock"
                 loading="lazy"
                 onLoad={() => console.log('Todo app loaded successfully')}
                 onError={(e) => console.error('Failed to load todo app')}
+                style={{
+                  minHeight: '100%',
+                  overflow: 'hidden'
+                }}
               />
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-center">
+          <div className="flex items-center justify-center h-full text-center p-4">
             <div className="text-gray-400">
-              <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">No running applications</p>
-              <p className="text-xs text-purple-300 mt-2">
+              <Globe className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-4 opacity-50" />
+              <p className="text-xs sm:text-sm">No running applications</p>
+              <p className="text-xs text-purple-300 mt-1 sm:mt-2">
                 Create an app with Pareng Boyong to see it here
               </p>
             </div>
