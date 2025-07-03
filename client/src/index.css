@@ -176,3 +176,37 @@
 .monaco-editor .line-numbers {
   color: var(--text-secondary) !important;
 }
+
+/* Mobile sticky tab enhancements */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced mobile support for sticky elements */
+@supports (position: sticky) {
+  .sticky {
+    position: -webkit-sticky;
+    position: sticky;
+  }
+}
+
+/* Touch-friendly interactions on mobile */
+@media (max-width: 768px) {
+  .sticky {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Ensure tabs remain accessible during scrolling */
+  .tabs-container {
+    touch-action: pan-x;
+  }
+}

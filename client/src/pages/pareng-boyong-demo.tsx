@@ -301,8 +301,8 @@ export default function ParengBoyongDemo() {
         {/* Main Content Area with Tabs */}
         <div className="flex-1 flex flex-col">
           <Tabs defaultValue="chat" className="flex-1 flex flex-col">
-            <div className="border-b border-purple-500/30 bg-black px-2 sm:px-4 py-2">
-              <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto">
+            <div className="sticky top-0 z-10 border-b border-purple-500/30 bg-black/95 backdrop-blur-sm px-2 sm:px-4 py-2">
+              <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth">
                 <TabsTrigger 
                   value="chat" 
                   className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
