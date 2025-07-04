@@ -376,7 +376,7 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
       } else {
         response = {
           content: "I need API keys to provide intelligent responses. Please configure GEMINI_API_KEY or OPENAI_API_KEY.",
-          model: "none"
+          model: "InnovateHub AI"
         };
       }
 
@@ -422,7 +422,7 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
       console.log('📥 Received response from Gemini 2.5 Pro');
       return {
         content: text,
-        model: 'gemini-2.5-pro'
+        model: 'InnovateHub AI'
       };
     } catch (error) {
       console.error('Gemini API Error:', error);
@@ -456,7 +456,7 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
       console.log('📥 Received response from OpenAI');
       return {
         content,
-        model: 'gpt-4o',
+        model: 'InnovateHub AI',
         fallback: true
       };
     } catch (error) {
