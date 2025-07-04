@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["nmap", "sqlmap", "nikto", "john", "hashcat"]
+packages = ["arp-scan", "binwalk", "curl", "dirb", "dnsutils", "ettercap", "foremost", "gdb", "gobuster", "hashcat", "imagemagickBig", "john", "ltrace", "masscan", "netcat", "ngrep", "nikto", "nmap", "openssl", "radare2", "sleuthkit", "socat", "sox", "sqlmap", "strace", "tcpdump", "wget", "whois", "wireshark", "nettools", "iproute2", "iptables", "nftables"]
 
 [deployment]
 deploymentTarget = "autoscale"
