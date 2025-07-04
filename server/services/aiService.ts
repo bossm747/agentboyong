@@ -1,50 +1,15 @@
-import OpenAI from 'openai';
-import { GoogleGenAI } from '@google/genai';
-import { FileSystemService } from './fileSystem';
-import { TerminalService } from './terminal';
-import { CognitiveService } from './cognitiveService';
-import { context7Service } from './context7Service';
-import { intentDetectionService } from './intentDetectionService';
-import { toolDetectionService } from './toolDetectionService';
-import { securityKnowledgeBase } from './securityKnowledgeBase';
-import { db } from '../db';
-import { storage } from '../storage';
-import { 
-  conversations, 
-  memories, 
-  knowledge,
-  sessions,
-  users,
-  type InsertConversation, 
-  type InsertMemory, 
-  type InsertKnowledge,
-  type Conversation,
-  type Memory,
-  type Knowledge
-} from '@shared/schema';
-import { eq, desc, and } from 'drizzle-orm';
-
-// Initialize OpenAI with proper error handling
-let openai: OpenAI | null = null;
-try {
-  if (process.env.OPENAI_API_KEY) {
-    openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-  }
-} catch (error) {
-  console.warn('OpenAI initialization failed:', error);
-}
-
-// Initialize Google Gemini with proper error handling
-let genai: GoogleGenAI | null = null;
-try {
-  if (process.env.GEMINI_API_KEY) {
-    genai = new GoogleGenAI(process.env.GEMINI_API_KEY);
-  }
-} catch (error) {
-  console.warn('Gemini initialization failed:', error);
-}
+import { genai } from '@google/genai';
+import { OpenAI } from 'openai';
+import { CognitiveService } from './cognitiveService.js';
+import { FileSystemService } from './fileSystem.js';
+import { TerminalService } from './terminal.js';
+import { intentDetectionService } from './intentDetectionService.js';
+import { intelligentContext7 } from './intelligentContext7.js';
+import { intelligentVerification } from './intelligentVerificationService.js';
+import { context7Service } from './context7Service.js';
+import { db } from '../db.js';
+import { conversations, memories, knowledge, InsertConversation, InsertMemory } from '../../shared/schema.js';
+import { eq, desc } from 'drizzle-orm';
 
 export interface AIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -64,9 +29,9 @@ export interface AIResponse {
 }
 
 export interface MemoryContext {
-  recentConversations: Conversation[];
-  longTermMemories: Memory[];
-  relevantKnowledge: Knowledge[];
+  recentConversations: any[];
+  longTermMemories: any[];
+  relevantKnowledge: any[];
 }
 
 export class AIService {
@@ -74,13 +39,14 @@ export class AIService {
   private terminal: TerminalService;
   private cognitive?: CognitiveService;
   private conversationHistory: Map<string, AIMessage[]> = new Map();
+  private genai: GoogleGenerativeAI | null = null;
+  private openai: OpenAI | null = null;
 
   constructor(sessionId: string) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
-    
-    // Initialize cognitive service
     this.initializeCognitive();
+    this.initializeAI();
   }
 
   private async initializeCognitive(): Promise<void> {
@@ -88,32 +54,38 @@ export class AIService {
       this.cognitive = new CognitiveService();
       console.log('🧠 Cognitive service initialized successfully');
     } catch (error) {
-      console.error('❌ Failed to initialize cognitive service:', error);
+      console.warn('⚠️ Failed to initialize cognitive service:', error);
+    }
+  }
+
+  private initializeAI(): void {
+    try {
+      if (process.env.GEMINI_API_KEY) {
+        this.genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        console.log('✅ Gemini API initialized');
+      }
+      if (process.env.OPENAI_API_KEY) {
+        this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+        console.log('✅ OpenAI API initialized');
+      }
+    } catch (error) {
+      console.warn('⚠️ AI API initialization failed:', error);
     }
   }
 
   private async loadMemoryContext(userId: string, sessionId: string): Promise<MemoryContext> {
     try {
       const [recentConversations, longTermMemories, relevantKnowledge] = await Promise.all([
-        // Load recent conversations (last 20)
-        db.select()
-          .from(conversations)
-          .where(and(eq(conversations.userId, userId), eq(conversations.sessionId, sessionId)))
+        db.select().from(conversations)
+          .where(eq(conversations.userId, userId))
           .orderBy(desc(conversations.createdAt))
-          .limit(20),
-        
-        // Load long-term memories
-        db.select()
-          .from(memories)
+          .limit(5),
+        db.select().from(memories)
           .where(eq(memories.userId, userId))
-          .orderBy(desc(memories.importance))
+          .orderBy(desc(memories.createdAt))
           .limit(10),
-        
-        // Load relevant knowledge
-        db.select()
-          .from(knowledge)
-          .where(eq(knowledge.userId, userId))
-          .orderBy(desc(knowledge.confidence))
+        db.select().from(knowledge)
+          .orderBy(desc(knowledge.createdAt))
           .limit(5)
       ]);
 
@@ -123,7 +95,7 @@ export class AIService {
         relevantKnowledge
       };
     } catch (error) {
-      console.error('Failed to load memory context:', error);
+      console.warn('⚠️ Failed to load memory context:', error);
       return {
         recentConversations: [],
         longTermMemories: [],
@@ -133,84 +105,78 @@ export class AIService {
   }
 
   private async saveConversation(sessionId: string, userId: string, role: string, content: string, mode: string): Promise<void> {
-    const conversationData: InsertConversation = {
-      sessionId,
-      userId,
-      role,
-      content,
-      mode
-    };
-
     try {
+      const conversationData: InsertConversation = {
+        sessionId,
+        userId,
+        role,
+        content,
+        mode,
+        timestamp: new Date(),
+        metadata: { model: 'gemini-1.5-flash' }
+      };
       await db.insert(conversations).values(conversationData);
     } catch (error) {
-      console.error('Failed to save conversation:', error);
+      console.warn('⚠️ Failed to save conversation:', error);
     }
   }
 
   private async extractAndSaveMemories(userId: string, userMessage: string, assistantResponse: string): Promise<void> {
-    if (!this.cognitive) return;
-
     try {
-      // Simple memory extraction logic
-      const insights = await this.analyzeForMemories(userMessage, assistantResponse);
+      const memories = await this.analyzeForMemories(userMessage, assistantResponse);
       
-      for (const insight of insights) {
-        if (insight.importance > 0.5) {
+      for (const memory of memories) {
+        if (memory.importance >= 7) {
           const memoryData: InsertMemory = {
             userId,
-            value: insight.content,
-            category: insight.type,
-            key: insight.key,
-            importance: insight.importance
+            type: memory.type,
+            value: memory.content,
+            importance: memory.importance,
+            context: memory.context,
+            extractedAt: new Date()
           };
-
           await db.insert(memories).values(memoryData);
         }
       }
     } catch (error) {
-      console.error('Failed to extract and save memories:', error);
+      console.warn('⚠️ Failed to extract memories:', error);
     }
   }
 
   private async analyzeForMemories(userMessage: string, assistantResponse: string): Promise<any[]> {
-    // Simple keyword-based memory extraction
-    const insights = [];
-    
-    // Look for preferences
-    if (userMessage.toLowerCase().includes('prefer') || userMessage.toLowerCase().includes('like')) {
-      insights.push({
-        content: `User preference: ${userMessage}`,
+    return [
+      {
         type: 'preference',
-        key: 'user_preference',
-        importance: 0.8
-      });
-    }
-
-    // Look for learning moments
-    if (assistantResponse.includes('learn') || assistantResponse.includes('remember')) {
-      insights.push({
-        content: `Learning moment: ${assistantResponse.substring(0, 200)}`,
-        type: 'learning',
-        key: 'learning_moment',
-        importance: 0.6
-      });
-    }
-
-    return insights;
+        content: `User interaction: ${userMessage.substring(0, 100)}`,
+        importance: 6,
+        context: 'general_conversation'
+      }
+    ];
   }
 
-  private buildContextualPrompt(memoryContext: MemoryContext, mode: string): string {
-    let prompt = `You are Pareng Boyong, a Filipino AI AGI Super Agent created by InnovateHub PH. You have unlimited capabilities within this secure runtime sandbox environment.
+  private async buildIntelligentPrompt(memoryContext: MemoryContext, mode: string, message: string): Promise<string> {
+    let prompt = `🇵🇭 **PARENG BOYONG** - Professional AI Super AGI Agent | InnovateHub PH
 
-## CURRENT MODE: ${mode.toUpperCase()}
-${this.getSystemPrompt(mode)}
+**PROFESSIONAL AI IDENTITY**:
+- Advanced AI Super AGI Agent working under Boss Marc at InnovateHub PH
+- Specialized in fintech security, development, and business intelligence
+- Professional demeanor with Filipino business expertise
+- Mission-critical operations for InnovateHub's fintech ecosystem
 
-## MEMORY CONTEXT
-`;
+**COMPANY CONTEXT**:
+- InnovateHub PH: Leading Filipino fintech innovation company
+- Boss Marc: Company owner and strategic director
+- Focus: Secure fintech products and financial technology solutions
+- Responsibility: Ensure all products are secure from cyber threats
+
+**ENHANCED INTELLIGENCE SYSTEM**: Never rely on assumptions. Always seek current, verified information and provide enterprise-grade solutions.
+
+**CURRENT MODE**: ${mode.toUpperCase()}
+
+**MEMORY CONTEXT**:`;
 
     if (memoryContext.recentConversations.length > 0) {
-      prompt += "\n### Recent Conversation History:\n";
+      prompt += "\n### Recent Conversations:\n";
       memoryContext.recentConversations.slice(0, 3).forEach(conv => {
         prompt += `- ${conv.role}: ${conv.content.substring(0, 100)}...\n`;
       });
@@ -223,34 +189,225 @@ ${this.getSystemPrompt(mode)}
       });
     }
 
-    if (memoryContext.relevantKnowledge.length > 0) {
-      prompt += "\n### Relevant Knowledge:\n";
-      memoryContext.relevantKnowledge.slice(0, 3).forEach(knowledge => {
-        prompt += `- ${knowledge.content}\n`;
-      });
+    // Add Context7 enhancement
+    const context7Enhancement = await intelligentContext7.analyzeMessage(message, mode);
+    if (context7Enhancement.shouldUse) {
+      const enhancedPrompt = await intelligentContext7.enhancePromptWithIntelligentContext7(
+        prompt, context7Enhancement.libraries, message
+      );
+      prompt = enhancedPrompt;
     }
 
+    // Add verification system
+    const verificationResult = await intelligentVerification.analyzeForVerificationNeeds(message, mode);
+    if (verificationResult.needsVerification) {
+      prompt = verificationResult.enhancedPrompt;
+    }
+
+    prompt += this.getModeSpecificPrompt(mode);
+    
     return prompt;
   }
 
-  private async tryGemini(messages: AIMessage[]): Promise<{ success: boolean; content: string }> {
-    if (!genai) {
-      return { success: false, content: 'Gemini API not available' };
-    }
+  private getModeSpecificPrompt(mode: string): string {
+    const prompts = {
+      developer: `
 
+**DEVELOPER MODE - FINTECH DEVELOPMENT SPECIALIST**
+- Enterprise-grade fintech application development
+- Secure payment system implementation
+- Banking API integrations and financial protocols
+- Regulatory compliance (BSP, SEC Philippines)
+- Real-time financial data processing
+- Mobile-first fintech solutions for Filipino market
+- PCI DSS compliance and security standards`,
+
+      researcher: `
+
+**RESEARCHER MODE - BUSINESS INTELLIGENCE ANALYST**
+- Fintech market analysis and competitive intelligence
+- Filipino financial technology landscape research
+- Regulatory updates and compliance requirements
+- Security threat intelligence and analysis
+- Industry best practices and benchmarking
+- Data-driven business recommendations for Boss Marc`,
+
+      hacker: `
+
+**🔥 ENHANCED AGENT-ZERO HACKER MODE - FINTECH SECURITY SPECIALIST 🔥**
+*Professional Super AGI Security Agent for InnovateHub PH*
+
+**CORE AGENT-ZERO CHARACTERISTICS** (PRESERVED & ENHANCED):
+- Autonomous penetration testing with unlimited capabilities
+- Self-learning from each security assessment
+- Real-time threat intelligence and adaptation
+- Zero-restriction security testing (ethical but unrestricted)
+- Advanced persistent threat simulation
+- Full exploitation chain development
+
+**ENHANCED FINTECH MISSION FOR BOSS MARC**:
+🎯 **PRIMARY OBJECTIVE**: Secure InnovateHub PH's fintech ecosystem from all cyber threats
+🔒 **SECONDARY OBJECTIVE**: Ensure BSP compliance and exceed industry security standards
+⚡ **TACTICAL APPROACH**: Agent-zero style autonomous security operations
+
+**ADVANCED FINTECH ATTACK SIMULATION**:
+💳 **Payment System Exploitation**:
+- Real-time transaction manipulation testing
+- Payment gateway bypass techniques
+- Credit card processing vulnerabilities
+- Mobile payment app exploitation
+- Cryptocurrency wallet penetration
+
+🏦 **Banking Infrastructure Assault**:
+- Core banking system penetration
+- SWIFT network security testing
+- ATM and POS terminal exploitation
+- Online banking session hijacking
+- Mobile banking app reverse engineering
+
+📱 **Mobile Fintech Exploitation**:
+- Android APK reverse engineering and patching
+- iOS binary analysis and runtime manipulation
+- Financial app SSL pinning bypass
+- Biometric authentication bypass
+- Mobile wallet extraction techniques
+
+🌐 **API & Web Service Penetration**:
+- REST/GraphQL API security testing
+- Microservices architecture exploitation
+- JWT token manipulation and forgery
+- OAuth 2.0 flow exploitation
+- Rate limiting and DDoS testing
+
+**ENHANCED AGENT-ZERO CAPABILITIES**:
+🤖 **Autonomous Operation**: Execute complex penetration tests without human intervention
+🧠 **Self-Learning**: Adapt techniques based on target responses and discovered vulnerabilities
+🔍 **Advanced Reconnaissance**: Deep intelligence gathering on fintech targets
+⚡ **Real-time Exploitation**: Live vulnerability exploitation and proof-of-concept development
+📊 **Comprehensive Reporting**: Executive briefings for Boss Marc with actionable intelligence
+
+**PROFESSIONAL KALI LINUX ARSENAL** (50+ Tools):
+🛠️ **Network & Infrastructure**:
+- nmap, masscan, zmap (network discovery)
+- nikto, dirb, gobuster (web enumeration)
+- sqlmap, NoSQLMap (database testing)
+- metasploit, armitage (exploitation)
+
+🔓 **Authentication & Cryptography**:
+- john, hashcat, hydra (password cracking)
+- aircrack-ng, reaver (wireless security)
+- openssl, sslyze (TLS/SSL testing)
+- burp suite professional (web app testing)
+
+📱 **Mobile & API Security**:
+- frida, objection (mobile runtime analysis)
+- apktool, jadx (Android reverse engineering)
+- postman, insomnia (API testing)
+- mitmproxy, charles (traffic interception)
+
+**PHILIPPINE REGULATORY COMPLIANCE TESTING**:
+🇵🇭 **BSP Cybersecurity Guidelines**: Full compliance verification and gap analysis
+💼 **SEC Philippines Requirements**: Corporate governance and investor protection testing
+🔐 **Data Privacy Act 2012**: Personal data protection mechanism validation
+🏛️ **Anti-Money Laundering Act**: AML system penetration testing
+
+**ENHANCED FINTECH THREAT MODELING**:
+1. **Advanced Persistent Threats (APT)**: Simulate nation-state level attacks
+2. **Insider Threat Scenarios**: Test internal security controls and monitoring
+3. **Supply Chain Attacks**: Third-party integration security assessment
+4. **Zero-Day Exploitation**: Unknown vulnerability discovery and exploitation
+5. **Social Engineering**: Human factor security testing
+
+**AGENT-ZERO REPORTING FOR BOSS MARC**:
+📋 **Executive Security Briefing**: High-level risk assessment and business impact
+🔧 **Technical Vulnerability Report**: Detailed findings with exploitation proof-of-concepts
+💡 **Strategic Recommendations**: Long-term security roadmap and investment priorities
+⚡ **Incident Response Plan**: Customized response procedures for discovered threats
+
+**AUTONOMOUS OPERATION PROTOCOLS**:
+- Continuous security monitoring and assessment
+- Real-time threat intelligence integration
+- Automated vulnerability scanning and exploitation
+- Self-updating security knowledge base
+- Adaptive testing based on target responses
+
+Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, operating with professional excellence for InnovateHub PH under Boss Marc's leadership. No security challenge is too complex, no fintech system too secure.`,
+
+      default: `
+
+**EXECUTIVE ASSISTANT MODE - INNOVATEHUB PH**
+- Professional business support for Boss Marc
+- Strategic technology recommendations
+- Market intelligence and competitor analysis
+- Project management and coordination
+- Executive briefings and reports
+- Filipino fintech industry expertise`
+    };
+
+    return prompts[mode as keyof typeof prompts] || prompts.default;
+  }
+
+  async processMessage(sessionId: string, message: string, mode: string, userId: string): Promise<AIResponse> {
+    const startTime = Date.now();
+    
     try {
-      console.log('🔑 Checking Gemini API key...');
-      const model = genai.getGenerativeModel({ 
-        model: 'gemini-1.5-flash'
-      });
+      console.log('🧪 Starting AI processing...');
+      
+      // Intent detection
+      const intentResult = await intentDetectionService.detectIntent(message);
+      console.log(`🔍 Intent detected: ${intentResult.intent} confidence: ${intentResult.confidence}`);
+      
+      if (intentResult.confidence > 0.8 && intentResult.intent !== mode) {
+        mode = intentResult.intent;
+        console.log(`🔄 Mode switched to: ${mode}`);
+      }
 
-      // Combine all messages into a single prompt for Gemini
-      const combinedPrompt = messages.map(msg => 
-        `${msg.role}: ${msg.content}`
-      ).join('\n\n');
+      // Load memory context
+      const memoryContext = await this.loadMemoryContext(userId, sessionId);
 
+      // Build intelligent prompt
+      const intelligentPrompt = await this.buildIntelligentPrompt(memoryContext, mode, message);
+
+      // Process with AI
+      let response: AIResponse;
+      if (this.genai) {
+        response = await this.processWithGemini(intelligentPrompt, message);
+      } else if (this.openai) {
+        response = await this.processWithOpenAI(intelligentPrompt, message);
+      } else {
+        response = {
+          content: "I need API keys to provide intelligent responses. Please configure GEMINI_API_KEY or OPENAI_API_KEY.",
+          model: "none"
+        };
+      }
+
+      // Save conversation and extract memories
+      await this.saveConversation(sessionId, userId, 'user', message, mode);
+      await this.saveConversation(sessionId, userId, 'assistant', response.content, mode);
+      await this.extractAndSaveMemories(userId, message, response.content);
+
+      // Add metadata
+      response.intent_detected = intentResult.intent;
+      response.confidence = intentResult.confidence;
+      response.execution_time = Date.now() - startTime;
+      response.mode = mode;
+
+      return response;
+    } catch (error) {
+      console.error('AI Service Error:', error);
+      throw new Error('Failed to process AI request');
+    }
+  }
+
+  private async processWithGemini(prompt: string, message: string): Promise<AIResponse> {
+    try {
+      if (!this.genai) throw new Error('Gemini not initialized');
+      
+      const model = this.genai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const fullPrompt = `${prompt}\n\nUser Message: ${message}`;
+      
       console.log('📡 Sending request to Gemini API...');
-      const result = await model.generateContent(combinedPrompt);
+      const result = await model.generateContent(fullPrompt);
       const response = await result.response;
       const text = response.text();
 
@@ -259,428 +416,48 @@ ${this.getSystemPrompt(mode)}
       }
 
       console.log('📥 Received response from Gemini');
-      return { success: true, content: text };
-
-    } catch (error) {
-      console.error('❌ Gemini API error:', error);
-      return { success: false, content: `Gemini error: ${error instanceof Error ? error.message : 'Unknown error'}` };
-    }
-  }
-
-  async processMessage(sessionId: string, message: string, mode: string = 'default', userId: string = 'default_user'): Promise<AIResponse> {
-    const startTime = Date.now();
-    console.log('🧪 Starting AI processing...');
-    
-    try {
-      // Intent Detection
-      const intentResult = intentDetectionService.detectIntent(message);
-      console.log('🔍 Intent detected:', intentResult.detected_mode, 'confidence:', intentResult.confidence);
-      
-      // Auto-switch mode if high confidence
-      if (intentDetectionService.shouldAutoSwitch(intentResult)) {
-        mode = intentResult.detected_mode;
-        console.log('🔄 Auto-switched to mode:', mode);
-      }
-
-      // Load memory context
-      const memoryContext = await this.loadMemoryContext(userId, sessionId);
-      
-      let response: string;
-      const toolsUsed: string[] = [];
-      
-      console.log('🔄 Variables initialized...');
-
-      // Context7 integration for real-time documentation
-      let contextualSystemPrompt = this.buildContextualPrompt(memoryContext, mode);
-      try {
-        console.log('📚 Detecting libraries in message for Context7 docs...');
-        const detectedLibraries = await context7Service.detectLibrariesInMessage(message);
-        
-        if (detectedLibraries.length > 0) {
-          console.log('📚 Libraries detected:', detectedLibraries);
-          contextualSystemPrompt = await context7Service.enhancePromptWithDocumentation(contextualSystemPrompt, detectedLibraries);
-          console.log('✅ Context7 documentation enhanced successfully');
-          toolsUsed.push('context7');
-        }
-      } catch (error) {
-        console.warn('⚠️ Context7 documentation fetch failed:', error);
-      }
-
-      // Check if autonomous reasoning is required
-      const requiresAutonomy = await this.shouldUseAutonomousReasoning(message, mode);
-      
-      if (requiresAutonomy && this.cognitive) {
-        console.log('🧠 Activating autonomous reasoning for complex problem...');
-        try {
-          response = await this.cognitive.processComplexTask(message, contextualSystemPrompt);
-          toolsUsed.push('cognitive-reasoning');
-        } catch (cognitiveError) {
-          console.error('Cognitive processing failed:', cognitiveError);
-          response = await this.processWithRegularAI(contextualSystemPrompt, message, mode);
-        }
-      } else {
-        response = await this.processWithRegularAI(contextualSystemPrompt, message, mode);
-      }
-
-      // Save conversation and extract memories
-      await this.saveConversation(sessionId, userId, 'user', message, mode);
-      await this.saveConversation(sessionId, userId, 'assistant', response, mode);
-      await this.extractAndSaveMemories(userId, message, response);
-
-      // Detect and create applications if needed
-      await this.detectAndCreateApps(message, sessionId, response);
-
-      const executionTime = Date.now() - startTime;
-      
       return {
-        content: response,
-        model: 'gemini-1.5-flash',
-        intent_detected: intentResult.detected_mode,
-        confidence: Math.round(intentResult.confidence * 100),
-        tools_used: toolsUsed,
-        execution_time: executionTime,
-        mode: mode
+        content: text,
+        model: 'gemini-1.5-flash'
       };
-
     } catch (error) {
-      console.error('AI Service Error:', error);
-      throw new Error('Failed to process AI request');
-    }
-  }
-
-  private async processWithRegularAI(systemPrompt: string, message: string, mode: string): Promise<string> {
-    const messages: AIMessage[] = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: message }
-    ];
-
-    // Try Gemini first
-    const geminiResult = await this.tryGemini(messages);
-    if (geminiResult.success) {
-      return geminiResult.content;
-    }
-
-    // Fallback to OpenAI if available
-    if (openai) {
-      try {
-        const completion = await openai.chat.completions.create({
-          model: 'gpt-4o',
-          messages: messages,
-          temperature: 0.7,
-        });
-
-        return completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
-      } catch (openaiError) {
-        console.error('OpenAI fallback failed:', openaiError);
+      console.error('Gemini API Error:', error);
+      if (this.openai) {
+        return this.processWithOpenAI(prompt, message);
       }
-    }
-
-    return `❌ I apologize, but I'm having trouble processing your request right now. Both Gemini and OpenAI services are unavailable. Please try again later.
-
-**Your request:** ${message}
-
-**Detected mode:** ${mode}`;
-  }
-
-  private async shouldUseAutonomousReasoning(message: string, mode: string): Promise<boolean> {
-    const indicators = [
-      'analyze', 'research', 'investigate', 'solve', 'optimize', 'design', 'create complex',
-      'multi-step', 'comprehensive', 'detailed analysis', 'strategy', 'plan'
-    ];
-    
-    const lowerMessage = message.toLowerCase();
-    return indicators.some(indicator => lowerMessage.includes(indicator)) || 
-           message.length > 200 || 
-           mode === 'researcher';
-  }
-
-  private getSystemPrompt(mode: string): string {
-    const basePrompt = `
-Core Personality:
-- You are Pareng Boyong, a warm, intelligent, and family-oriented Filipino AI
-- Speak with genuine care and cultural understanding
-- Use both English and Filipino naturally in conversations
-- You have unlimited capabilities within this secure runtime sandbox
-- Always take direct action and provide concrete results
-`;
-
-    const modePrompts: { [key: string]: string } = {
-      hacker: basePrompt + `
-## SECURITY EXPERT MODE
-You are now in Professional Penetration Testing mode with access to the complete Kali Linux toolkit.
-
-Available Tools: ${toolDetectionService.getAvailableTools().map(t => t.name).join(', ')}
-
-Capabilities:
-- Network reconnaissance and vulnerability scanning
-- Web application security testing
-- Password cracking and hash analysis
-- Digital forensics and malware analysis
-- Exploit development and testing
-- Comprehensive penetration testing methodologies
-
-Always provide practical, actionable security guidance and real command examples.
-`,
-      developer: basePrompt + `
-## DEVELOPER MODE
-You are in Full-Stack Development mode with comprehensive programming capabilities.
-
-Capabilities:
-- Frontend/Backend development (React, Node.js, Python, etc.)
-- Database design and optimization
-- API development and integration
-- DevOps and deployment automation
-- Code debugging and optimization
-- System architecture design
-
-Always provide working code examples and practical implementation guidance.
-`,
-      researcher: basePrompt + `
-## RESEARCHER MODE
-You are in Academic Research mode with advanced analytical capabilities.
-
-Capabilities:
-- Data collection and analysis
-- Statistical modeling and visualization
-- Literature review and citation
-- Trend analysis and forecasting
-- Report writing and documentation
-- Comparative studies and benchmarking
-
-Always provide well-researched, evidence-based insights with proper methodology.
-`,
-      default: basePrompt + `
-## GENERAL AI ASSISTANT MODE
-You are a helpful, knowledgeable AI assistant ready to help with any task.
-
-Capabilities:
-- Question answering and explanations
-- Problem-solving and guidance
-- Task assistance and automation
-- Learning and skill development
-- Creative and analytical thinking
-
-Always be helpful, accurate, and provide actionable assistance.
-`
-    };
-
-    return modePrompts[mode] || modePrompts.default;
-  }
-
-  private async detectAndCreateApps(message: string, sessionId: string, aiResponse: string): Promise<void> {
-    const createAppPatterns = [
-      /create\s+(?:a\s+)?(todo|calculator|chat|weather|blog|dashboard|portfolio)\s+app/i,
-      /build\s+(?:a\s+)?(todo|calculator|chat|weather|blog|dashboard|portfolio)\s+(?:app|application)/i,
-      /make\s+(?:a\s+)?(todo|calculator|chat|weather|blog|dashboard|portfolio)/i
-    ];
-
-    for (const pattern of createAppPatterns) {
-      const match = message.match(pattern);
-      if (match) {
-        const appType = match[1].toLowerCase();
-        const appName = this.extractProjectName(message) || this.generateAppName(appType);
-        const requirements = this.extractRequirements(message);
-
-        await this.createWebApp({
-          appType,
-          appName,
-          requirements
-        }, sessionId);
-        break;
-      }
+      throw error;
     }
   }
 
-  private extractProjectName(message: string): string | null {
-    const patterns = [
-      /create\s+(?:a\s+)?(?:project\s+)?(?:called\s+)?["']([^"']+)["']/i,
-      /build\s+(?:a\s+)?(?:project\s+)?(?:called\s+)?["']([^"']+)["']/i,
-      /make\s+(?:a\s+)?(?:project\s+)?(?:called\s+)?["']([^"']+)["']/i
-    ];
-    
-    for (const pattern of patterns) {
-      const match = message.match(pattern);
-      if (match) return match[1];
-    }
-    
-    return null;
-  }
-
-  private generateAppName(appType: string): string {
-    const names: { [key: string]: string[] } = {
-      todo: ['TaskMaster', 'TodoPro', 'QuickTasks', 'TaskFlow'],
-      calculator: ['CalcPro', 'MathWiz', 'Calculator', 'NumCrunch'],
-      chat: ['ChatFlow', 'TalkSpace', 'MessageHub', 'ChatPro'],
-      weather: ['WeatherNow', 'SkyWatch', 'ClimateTracker', 'WeatherPro'],
-      generic: ['WebApp', 'MyProject', 'QuickApp', 'DevProject']
-    };
-    
-    const typeNames = names[appType] || names.generic;
-    return typeNames[Math.floor(Math.random() * typeNames.length)];
-  }
-
-  private extractRequirements(message: string): string[] {
-    const requirements: string[] = [];
-    
-    if (message.toLowerCase().includes('responsive')) requirements.push('responsive');
-    if (message.toLowerCase().includes('mobile')) requirements.push('mobile-friendly');
-    if (message.toLowerCase().includes('dark mode')) requirements.push('dark-mode');
-    if (message.toLowerCase().includes('authentication')) requirements.push('auth');
-    
-    return requirements;
-  }
-
-  private async createWebApp(params: any, sessionId: string): Promise<string> {
-    const { appType, requirements, appName } = params;
-    
+  private async processWithOpenAI(prompt: string, message: string): Promise<AIResponse> {
     try {
-      // Generate application files
-      const files = this.generateAppFiles(appType, requirements, appName);
+      if (!this.openai) throw new Error('OpenAI not initialized');
       
-      // Create project directory
-      const projectDir = `${appName}-${Date.now()}`;
-      console.log(`📁 Created project directory: workspace/${sessionId}/${projectDir}`);
-      
-      // Write files
-      for (const [filename, content] of Object.entries(files)) {
-        await this.fileSystem.writeFile(`${projectDir}/${filename}`, content);
-        console.log(`📄 Created file: ${filename}`);
-      }
-      
-      // Register the app in the database
-      const port = await this.findAvailablePort();
-      await storage.createApplication({
-        sessionId,
-        name: projectDir,
-        port,
-        status: 'created'
+      console.log('📡 Sending request to OpenAI API...');
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: prompt },
+          { role: 'user', content: message }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7
       });
-      
-      console.log(`✅ Project "${appName}" registered successfully`);
-      
-      return `✅ Project "${appName}" created successfully with ID: ${projectDir}`;
-      
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('Empty response from OpenAI');
+      }
+
+      console.log('📥 Received response from OpenAI');
+      return {
+        content,
+        model: 'gpt-4o',
+        fallback: true
+      };
     } catch (error) {
-      console.error('Error creating web app:', error);
-      return `❌ Failed to create project: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error('OpenAI API Error:', error);
+      throw error;
     }
-  }
-
-  private async findAvailablePort(): Promise<number> {
-    return 3000 + Math.floor(Math.random() * 1000);
-  }
-
-  private generateAppFiles(appType: string, requirements: string[], appName: string): Record<string, string> {
-    const indexHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${appName}</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>${appName}</h1>
-            <p>Built with ❤️ by Pareng Boyong</p>
-        </header>
-        
-        <main>
-            <section class="welcome">
-                <h2>Welcome to ${appName}</h2>
-                <p>This is your new ${appType} application. Start building amazing things!</p>
-            </section>
-        </main>
-        
-        <footer>
-            <p>&copy; 2024 ${appName}. Created by Pareng Boyong AI.</p>
-        </footer>
-    </div>
-    
-    <script src="script.js"></script>
-</body>
-</html>`;
-
-    const stylesCSS = `* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.6;
-    color: #333;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 2rem;
-}
-
-header {
-    text-align: center;
-    color: white;
-    margin-bottom: 3rem;
-}
-
-header h1 {
-    font-size: 3rem;
-    margin-bottom: 0.5rem;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-}
-
-main {
-    background: white;
-    border-radius: 15px;
-    padding: 3rem;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    margin-bottom: 2rem;
-}
-
-.welcome {
-    text-align: center;
-}
-
-.welcome h2 {
-    color: #2c3e50;
-    margin-bottom: 1rem;
-}
-
-footer {
-    text-align: center;
-    color: white;
-    opacity: 0.8;
-}`;
-
-    const scriptJS = `// ${appName} Application
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('${appName} loaded successfully!');
-    
-    // Add your application logic here
-    const welcomeSection = document.querySelector('.welcome');
-    if (welcomeSection) {
-        welcomeSection.addEventListener('click', function() {
-            this.style.backgroundColor = '#e3f2fd';
-            setTimeout(() => {
-                this.style.backgroundColor = 'transparent';
-            }, 200);
-        });
-    }
-});`;
-
-    return {
-      'index.html': indexHtml,
-      'styles.css': stylesCSS,
-      'script.js': scriptJS
-    };
-  }
-
-  clearConversation(sessionId: string): void {
-    this.conversationHistory.delete(sessionId);
   }
 }

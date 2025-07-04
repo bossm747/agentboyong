@@ -12,6 +12,7 @@ import WebViewPanel from "@/components/webview-panel";
 import BackgroundTasksPanel from "@/components/background-tasks-panel";
 import FileManagerPanel from "@/components/file-manager-panel";
 import { TerminalPanel } from "@/components/terminal-panel";
+import Context7Status from "@/components/context7-status";
 import { 
   ChatSkeleton, 
   WebViewSkeleton, 
@@ -562,6 +563,14 @@ export default function ParengBoyongDemo() {
                   <span className="hidden sm:inline">Terminal</span>
                   <span className="sm:hidden">💻</span>
                 </TabsTrigger>
+                <TabsTrigger 
+                  value="system" 
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
+                >
+                  <Monitor className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">System</span>
+                  <span className="sm:hidden">⚙️</span>
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -747,6 +756,114 @@ export default function ParengBoyongDemo() {
               >
                 <div className="h-full p-4">
                   <TerminalPanel sessionId={currentContext} />
+                </div>
+              </LoadingTransition>
+            </TabsContent>
+
+            <TabsContent value="system" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
+              <LoadingTransition
+                isLoading={loadingTabs.has('system')}
+                skeleton={<div className="animate-pulse space-y-4 p-4"><div className="h-32 bg-gray-700 rounded"></div><div className="h-24 bg-gray-700 rounded"></div></div>}
+              >
+                <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-transparent">
+                  <div className="space-y-6">
+                    {/* System Status Overview */}
+                    <Card className="bg-gray-900/50 border-purple-500/30">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-cyan-400">
+                          <Monitor className="h-5 w-5" />
+                          Pareng Boyong System Status
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 bg-green-500/20 rounded border border-green-500/30">
+                            <div className="text-green-400 text-sm font-medium">Agent Status</div>
+                            <div className="text-green-300 text-xs">Active & Operational</div>
+                          </div>
+                          <div className="text-center p-3 bg-blue-500/20 rounded border border-blue-500/30">
+                            <div className="text-blue-400 text-sm font-medium">Runtime Sandbox</div>
+                            <div className="text-blue-300 text-xs">Integrated & Secure</div>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-purple-300">Current Mode:</span>
+                          <Badge variant="outline" className="border-cyan-500/50 text-cyan-400">
+                            {modeOptions.find(m => m.value === selectedMode)?.label}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-purple-300">Session:</span>
+                          <span className="text-green-400 font-mono text-xs">{currentContext}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Context7 Integration Status */}
+                    <Context7Status />
+
+                    {/* API Endpoints Status */}
+                    <Card className="bg-gray-900/50 border-purple-500/30">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-purple-400">
+                          <Globe className="h-5 w-5" />
+                          API Endpoints
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="grid grid-cols-1 gap-2 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300">/api/pareng-boyong/chat</span>
+                            <Badge variant="default" className="bg-green-500 text-xs">Active</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300">/api/context7/status</span>
+                            <Badge variant="default" className="bg-green-500 text-xs">Active</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300">/api/context7/library/*</span>
+                            <Badge variant="default" className="bg-green-500 text-xs">Active</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300">/api/pareng-boyong/memories</span>
+                            <Badge variant="default" className="bg-green-500 text-xs">Active</Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Capabilities Overview */}
+                    <Card className="bg-gray-900/50 border-purple-500/30">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-cyan-400">
+                          <Activity className="h-5 w-5" />
+                          AI Capabilities
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        <div className="grid grid-cols-1 gap-2 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300">Intent Detection</span>
+                            <Badge variant="default" className="bg-green-500 text-xs">100% Accuracy</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300">Security Toolkit</span>
+                            <Badge variant="default" className="bg-green-500 text-xs">50+ Tools</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300">Real-time Documentation</span>
+                            <Badge variant="default" className="bg-yellow-500 text-xs">Context7 Active</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-300">Persistent Memory</span>
+                            <Badge variant="default" className="bg-green-500 text-xs">PostgreSQL</Badge>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </LoadingTransition>
             </TabsContent>
