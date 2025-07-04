@@ -39,7 +39,7 @@ export class AIService {
   private terminal: TerminalService;
   private cognitive?: CognitiveService;
   private conversationHistory: Map<string, AIMessage[]> = new Map();
-  private genai: GoogleGenerativeAI | null = null;
+  private genai: any = null;
   private openai: OpenAI | null = null;
 
   constructor(sessionId: string) {
@@ -61,7 +61,7 @@ export class AIService {
   private initializeAI(): void {
     try {
       if (process.env.GEMINI_API_KEY) {
-        this.genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        this.genai = genai;
         console.log('✅ Gemini API initialized');
       }
       if (process.env.OPENAI_API_KEY) {
@@ -355,11 +355,13 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
       
       // Intent detection
       const intentResult = await intentDetectionService.detectIntent(message);
-      console.log(`🔍 Intent detected: ${intentResult.intent} confidence: ${intentResult.confidence}`);
+      console.log(`🔍 Intent detected: ${intentResult.detected_mode} confidence: ${intentResult.confidence}`);
       
-      if (intentResult.confidence > 0.8 && intentResult.intent !== mode) {
-        mode = intentResult.intent;
+      if (intentResult.confidence > 0.8 && intentResult.detected_mode !== mode && intentResult.detected_mode !== 'default') {
+        mode = intentResult.detected_mode || 'default';
         console.log(`🔄 Mode switched to: ${mode}`);
+      } else if (!mode || mode === 'undefined') {
+        mode = 'default';
       }
 
       // Load memory context
@@ -387,7 +389,7 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
       await this.extractAndSaveMemories(userId, message, response.content);
 
       // Add metadata
-      response.intent_detected = intentResult.intent;
+      response.intent_detected = intentResult.detected_mode;
       response.confidence = intentResult.confidence;
       response.execution_time = Date.now() - startTime;
       response.mode = mode;

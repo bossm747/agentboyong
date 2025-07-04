@@ -213,7 +213,8 @@ export class IntentDetectionService {
       .sort(([,a], [,b]) => b - a);
 
     const topMode = sortedModes[0];
-    const confidence = this.calculateConfidence(topMode[1], sortedModes);
+    const detectedMode = topMode ? topMode[0] : 'default';
+    const confidence = topMode ? this.calculateConfidence(topMode[1], sortedModes) : 100;
 
     // Create alternative modes list
     const alternatives = sortedModes.slice(1, 3).map(([mode, score]) => ({
@@ -222,9 +223,9 @@ export class IntentDetectionService {
     }));
 
     return {
-      detected_mode: topMode[0],
+      detected_mode: detectedMode,
       confidence,
-      reasoning: reasoningDetails[topMode[0]],
+      reasoning: reasoningDetails[detectedMode] || ['Default mode selected'],
       alternative_modes: alternatives
     };
   }

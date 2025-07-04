@@ -1,0 +1,72 @@
+{
+  "timestamp": "2025-07-04T09:30:52.300Z",
+  "summary": {
+    "total": 10,
+    "passed": 2,
+    "failed": 8,
+    "successRate": "20.0",
+    "totalDuration": 5694
+  },
+  "details": [
+    {
+      "name": "Intent Detection System",
+      "status": "FAILED",
+      "duration": 221,
+      "error": "HTTP 500: Internal Server Error"
+    },
+    {
+      "name": "Context7 Real Documentation Service",
+      "status": "PASSED",
+      "duration": 3106,
+      "error": null
+    },
+    {
+      "name": "Security Tools Integration",
+      "status": "FAILED",
+      "duration": 9,
+      "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+    },
+    {
+      "name": "Advanced Chat Interface",
+      "status": "FAILED",
+      "duration": 186,
+      "error": "HTTP 500: Internal Server Error"
+    },
+    {
+      "name": "Mode Switching and Context Preservation",
+      "status": "FAILED",
+      "duration": 424,
+      "error": "Mode switching failed for default mode"
+    },
+    {
+      "name": "Real-time Documentation Integration",
+      "status": "FAILED",
+      "duration": 181,
+      "error": "HTTP 500: Internal Server Error"
+    },
+    {
+      "name": "Database Operations and Memory System",
+      "status": "FAILED",
+      "duration": 264,
+      "error": "HTTP 500: Internal Server Error"
+    },
+    {
+      "name": "Performance and Load Testing",
+      "status": "PASSED",
+      "duration": 1008,
+      "error": null
+    },
+    {
+      "name": "Error Handling and Resilience",
+      "status": "FAILED",
+      "duration": 10,
+      "error": "Unexpected token '<', \"<!DOCTYPE \"... is not valid JSON"
+    },
+    {
+      "name": "Integration Test - Full Workflow",
+      "status": "FAILED",
+      "duration": 268,
+      "error": "HTTP 500: Internal Server Error"
+    }
+  ]
+}
