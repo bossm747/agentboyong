@@ -1,4 +1,4 @@
-import { genai } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { OpenAI } from 'openai';
 import { CognitiveService } from './cognitiveService.js';
 import { FileSystemService } from './fileSystem.js';
@@ -39,10 +39,10 @@ export class AIService {
   private terminal: TerminalService;
   private cognitive?: CognitiveService;
   private conversationHistory: Map<string, AIMessage[]> = new Map();
-  private genai: any = null;
+  private genai: GoogleGenAI | null = null;
   private openai: OpenAI | null = null;
 
-  constructor(sessionId: string) {
+  constructor(private sessionId: string) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
     this.initializeCognitive();
@@ -51,7 +51,7 @@ export class AIService {
 
   private async initializeCognitive(): Promise<void> {
     try {
-      this.cognitive = new CognitiveService();
+      this.cognitive = new CognitiveService(this.sessionId);
       console.log('🧠 Cognitive service initialized successfully');
     } catch (error) {
       console.warn('⚠️ Failed to initialize cognitive service:', error);
@@ -61,7 +61,7 @@ export class AIService {
   private initializeAI(): void {
     try {
       if (process.env.GEMINI_API_KEY) {
-        this.genai = genai;
+        this.genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         console.log('✅ Gemini API initialized');
       }
       if (process.env.OPENAI_API_KEY) {
@@ -111,9 +111,7 @@ export class AIService {
         userId,
         role,
         content,
-        mode,
-        timestamp: new Date(),
-        metadata: { model: 'gemini-1.5-flash' }
+        mode
       };
       await db.insert(conversations).values(conversationData);
     } catch (error) {
@@ -123,17 +121,16 @@ export class AIService {
 
   private async extractAndSaveMemories(userId: string, userMessage: string, assistantResponse: string): Promise<void> {
     try {
-      const memories = await this.analyzeForMemories(userMessage, assistantResponse);
+      const memoryInsights = await this.analyzeForMemories(userMessage, assistantResponse);
       
-      for (const memory of memories) {
+      for (const memory of memoryInsights) {
         if (memory.importance >= 7) {
           const memoryData: InsertMemory = {
             userId,
-            type: memory.type,
+            category: memory.type,
+            key: `interaction_${Date.now()}`,
             value: memory.content,
-            importance: memory.importance,
-            context: memory.context,
-            extractedAt: new Date()
+            importance: memory.importance
           };
           await db.insert(memories).values(memoryData);
         }
@@ -405,22 +402,27 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
     try {
       if (!this.genai) throw new Error('Gemini not initialized');
       
-      const model = this.genai.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const fullPrompt = `${prompt}\n\nUser Message: ${message}`;
       
-      console.log('📡 Sending request to Gemini API...');
-      const result = await model.generateContent(fullPrompt);
-      const response = await result.response;
-      const text = response.text();
+      console.log('📡 Sending request to Gemini 2.5 Pro API...');
+      
+      // Use the correct Google GenAI API structure for Gemini 2.5 Pro
+      const result = await this.genai.models.generateContent({
+        model: 'gemini-2.5-pro',
+        contents: fullPrompt
+      });
 
+      // Access the response text directly as per official documentation
+      const text = result.text;
+      
       if (!text || text.trim().length === 0) {
         throw new Error('Empty response from Gemini');
       }
 
-      console.log('📥 Received response from Gemini');
+      console.log('📥 Received response from Gemini 2.5 Pro');
       return {
         content: text,
-        model: 'gemini-1.5-flash'
+        model: 'gemini-2.5-pro'
       };
     } catch (error) {
       console.error('Gemini API Error:', error);
