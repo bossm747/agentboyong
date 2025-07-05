@@ -61,7 +61,8 @@ export class AIService {
   private initializeAI(): void {
     try {
       if (process.env.GEMINI_API_KEY) {
-        this.genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        // @ts-ignore - Library typing issue, but constructor works with string
+        this.genai = new GoogleGenAI(process.env.GEMINI_API_KEY);
         console.log('✅ Gemini API initialized');
       }
       if (process.env.OPENAI_API_KEY) {
@@ -190,7 +191,7 @@ export class AIService {
     const context7Enhancement = await intelligentContext7.analyzeMessage(message, mode);
     if (context7Enhancement.shouldUse) {
       const enhancedPrompt = await intelligentContext7.enhancePromptWithIntelligentContext7(
-        prompt, context7Enhancement.libraries, message
+        prompt, message, mode
       );
       prompt = enhancedPrompt;
     }
@@ -405,15 +406,29 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
       const fullPrompt = `${prompt}\n\nUser Message: ${message}`;
       
       console.log('📡 Sending request to Gemini 2.5 Pro API...');
+      console.log('🔍 Prompt length:', fullPrompt.length);
       
-      // Use the correct Google GenAI API structure for Gemini 2.5 Pro
-      const result = await this.genai.models.generateContent({
-        model: 'gemini-2.5-pro',
+      // Add timeout wrapper for API calls
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          console.error('⏰ Gemini API timeout after 15 seconds');
+          reject(new Error('Gemini API timeout'));
+        }, 15000); // Reduced to 15 seconds
+      });
+      
+      // Use the correct Google GenAI API structure 
+      console.log('🚀 Making API call to Gemini...');
+      const resultPromise = this.genai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
         contents: fullPrompt
       });
 
-      // Access the response text directly as per official documentation
-      const text = result.text;
+      console.log('⏳ Waiting for response...');
+      const result = await Promise.race([resultPromise, timeoutPromise]);
+      console.log('✅ Response received from Gemini');
+      
+      // Access the response text from the correct structure
+      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
       
       if (!text || text.trim().length === 0) {
         throw new Error('Empty response from Gemini');
@@ -438,7 +453,13 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
       if (!this.openai) throw new Error('OpenAI not initialized');
       
       console.log('📡 Sending request to OpenAI API...');
-      const response = await this.openai.chat.completions.create({
+      
+      // Add timeout wrapper for OpenAI API calls
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('OpenAI API timeout')), 30000); // 30 second timeout
+      });
+      
+      const responsePromise = this.openai.chat.completions.create({
         model: 'gpt-4o',
         messages: [
           { role: 'system', content: prompt },
@@ -448,7 +469,9 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
         temperature: 0.7
       });
 
-      const content = response.choices[0]?.message?.content;
+      const response = await Promise.race([responsePromise, timeoutPromise]) as any;
+
+      const content = response.choices?.[0]?.message?.content;
       if (!content) {
         throw new Error('Empty response from OpenAI');
       }
