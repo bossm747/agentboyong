@@ -132,7 +132,7 @@ export class RealSecurityExecutor {
       const portMatch = message.match(/port[s]?\s+(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)/i);
       const targetMatch = message.match(/(?:on|target|scan)\s+([a-zA-Z0-9.-]+)/i);
       
-      const args = ['-sS']; // Basic SYN scan
+      const args = ['-sT']; // TCP connect scan (doesn't require root)
       if (portMatch) {
         args.push('-p', portMatch[1]);
       }
