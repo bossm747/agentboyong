@@ -175,30 +175,30 @@ export function AdvancedAIInterface({ sessionId, mode = 'default', onModeChange 
   const currentMode = getCurrentModeInfo();
 
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <div className="flex flex-col h-full space-y-2 p-2 sm:space-y-4 sm:p-4">
       {/* Header with Mode Selection */}
-      <Card className="p-4">
+      <Card className="p-2 sm:p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <div className="flex items-center space-x-2">
-              <currentMode.icon className={`h-5 w-5 text-${currentMode.color}-500`} />
-              <h2 className="text-lg font-semibold">Pareng Boyong</h2>
-              <Badge variant="outline" className={`text-${currentMode.color}-600`}>
-                {currentMode.name} Mode
+              <currentMode.icon className={`h-4 w-4 sm:h-5 sm:w-5 text-${currentMode.color}-500`} />
+              <h2 className="text-sm sm:text-lg font-semibold">Pareng Boyong</h2>
+              <Badge variant="outline" className={`text-xs sm:text-sm text-${currentMode.color}-600`}>
+                {currentMode.name}
               </Badge>
             </div>
             
-            <div className="flex space-x-1">
+            <div className="flex space-x-1 overflow-x-auto">
               {modes.map((modeOption) => (
                 <Button
                   key={modeOption.id}
                   size="sm"
                   variant={mode === modeOption.id ? 'default' : 'outline'}
                   onClick={() => onModeChange?.(modeOption.id)}
-                  className="flex items-center space-x-1"
+                  className="flex items-center space-x-1 flex-shrink-0"
                 >
-                  <modeOption.icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{modeOption.name}</span>
+                  <modeOption.icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="text-xs sm:text-sm">{modeOption.name}</span>
                 </Button>
               ))}
             </div>
@@ -209,30 +209,31 @@ export function AdvancedAIInterface({ sessionId, mode = 'default', onModeChange 
               size="sm"
               variant={showLiveMonitor ? 'default' : 'outline'}
               onClick={() => setShowLiveMonitor(!showLiveMonitor)}
+              className="text-xs sm:text-sm"
             >
-              {showLiveMonitor ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              <span className="hidden sm:inline ml-1">Live Monitor</span>
+              {showLiveMonitor ? <Eye className="h-3 w-3 sm:h-4 sm:w-4" /> : <EyeOff className="h-3 w-3 sm:h-4 sm:w-4" />}
+              <span className="hidden sm:inline ml-1">Monitor</span>
             </Button>
           </div>
         </div>
       </Card>
 
       {/* Main Interface */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 min-h-0">
         {/* Chat Interface */}
-        <div className="lg:col-span-2">
-          <Card className="h-full flex flex-col">
+        <div className="lg:col-span-2 min-h-0">
+          <Card className="h-full flex flex-col min-h-0">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <div className="p-4 border-b">
+              <div className="p-2 sm:p-4 border-b">
                 <TabsList className="grid grid-cols-2 w-full max-w-md">
-                  <TabsTrigger value="chat">Chat</TabsTrigger>
-                  <TabsTrigger value="history">History</TabsTrigger>
+                  <TabsTrigger value="chat" className="text-xs sm:text-sm">Chat</TabsTrigger>
+                  <TabsTrigger value="history" className="text-xs sm:text-sm">History</TabsTrigger>
                 </TabsList>
               </div>
 
               <TabsContent value="chat" className="flex-1 flex flex-col m-0">
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
+                <ScrollArea className="flex-1 p-2 sm:p-4">
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <div
@@ -318,7 +319,7 @@ export function AdvancedAIInterface({ sessionId, mode = 'default', onModeChange 
                 </ScrollArea>
 
                 {/* Input */}
-                <div className="p-4 border-t">
+                <div className="p-2 sm:p-4 border-t">
                   <div className="flex space-x-2">
                     <Input
                       value={inputMessage}
@@ -326,23 +327,24 @@ export function AdvancedAIInterface({ sessionId, mode = 'default', onModeChange 
                       onKeyPress={handleKeyPress}
                       placeholder={`Message Pareng Boyong in ${currentMode.name} mode...`}
                       disabled={isProcessing}
-                      className="flex-1"
+                      className="flex-1 text-xs sm:text-sm"
                     />
                     <Button
                       onClick={handleSendMessage}
                       disabled={isProcessing || !inputMessage.trim()}
-                      size="icon"
+                      size="sm"
+                      className="px-2 sm:px-3"
                     >
-                      <Send className="h-4 w-4" />
+                      <Send className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
                 </div>
               </TabsContent>
 
-              <TabsContent value="history" className="flex-1 p-4">
+              <TabsContent value="history" className="flex-1 p-2 sm:p-4">
                 <div className="text-center text-muted-foreground">
-                  <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>Chat history and analytics will appear here</p>
+                  <Activity className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs sm:text-sm">Chat history and analytics will appear here</p>
                 </div>
               </TabsContent>
             </Tabs>
@@ -351,7 +353,7 @@ export function AdvancedAIInterface({ sessionId, mode = 'default', onModeChange 
 
         {/* Live Monitoring Panel */}
         {showLiveMonitor && (
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 min-h-0">
             <CopilotKitInterface
               sessionId={sessionId}
               onTaskUpdate={(task) => {

@@ -440,6 +440,18 @@ export default function ParengBoyongDemo() {
                 variant="ghost" 
                 size="sm" 
                 onClick={() => {
+                  setActiveTab("advanced");
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full justify-start text-xs ${activeTab === 'advanced' ? 'bg-cyan-500/20 text-cyan-400' : 'text-gray-400'}`}
+              >
+                <Activity className="h-3 w-3 mr-2" />
+                CopilotKit AI Interface
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
                   setActiveTab("webview");
                   setIsSidebarOpen(false);
                 }}
