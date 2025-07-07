@@ -673,7 +673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await ensureParengBoyongSession(sessionId, userId);
 
       console.log('🤖 Creating AI service...');
-      // Create AI service instance for this session
+      // Create AI service instance for this session with real-time monitoring
       const aiService = new AIService(sessionId);
       
       console.log('📝 Processing message with AI...');

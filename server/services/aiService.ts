@@ -8,6 +8,7 @@ import { intelligentContext7 } from './intelligentContext7.js';
 import { intelligentVerification } from './intelligentVerificationService.js';
 import { context7Service } from './context7Service.js';
 import RealSecurityExecutor from './realSecurityExecutor.js';
+import { executionMonitor } from './executionMonitor.js';
 import { db } from '../db.js';
 import { conversations, memories, knowledge, InsertConversation, InsertMemory } from '../../shared/schema.js';
 import { eq, desc } from 'drizzle-orm';
@@ -44,12 +45,30 @@ export class AIService {
   private genai: GoogleGenAI | null = null;
   private openai: OpenAI | null = null;
 
-  constructor(private sessionId: string) {
+  constructor(private sessionId: string, private wsClients?: Map<string, any>) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
     this.securityExecutor = new RealSecurityExecutor(sessionId);
     this.initializeCognitive();
     this.initializeAI();
+  }
+
+  private emitExecutionEvent(sessionId: string, event: any): void {
+    if (this.wsClients) {
+      const sessionClients = Array.from(this.wsClients.values()).filter(
+        client => client.sessionId === sessionId
+      );
+      
+      sessionClients.forEach(client => {
+        if (client.ws && client.ws.readyState === 1) {
+          try {
+            client.ws.send(JSON.stringify(event));
+          } catch (error) {
+            console.error('Failed to emit execution event:', error);
+          }
+        }
+      });
+    }
   }
 
   private async initializeCognitive(): Promise<void> {
@@ -350,33 +369,85 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
 
   async processMessage(sessionId: string, message: string, mode: string, userId: string): Promise<AIResponse> {
     const startTime = Date.now();
+    const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
       console.log('🧪 Starting AI processing...');
       
-      // Intent detection
+      // Start task monitoring
+      executionMonitor.startTask(
+        sessionId, 
+        taskId, 
+        'Processing AI Request',
+        `Analyzing message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`
+      );
+      
+      // Intent detection step
+      executionMonitor.addStep(sessionId, taskId, 'intent_detection', 'Analyzing intent and mode switching', 'Intent Detector');
       const intentResult = await intentDetectionService.detectIntent(message);
       console.log(`🔍 Intent detected: ${intentResult.detected_mode} confidence: ${intentResult.confidence}`);
       
       if (intentResult.confidence > 0.8 && intentResult.detected_mode !== mode && intentResult.detected_mode !== 'default') {
         mode = intentResult.detected_mode || 'default';
         console.log(`🔄 Mode switched to: ${mode}`);
-      } else if (!mode || mode === 'undefined') {
-        mode = 'default';
+        executionMonitor.completeStep(sessionId, taskId, 'intent_detection', 'completed', `Mode switched to: ${mode} (confidence: ${intentResult.confidence})`);
+      } else {
+        if (!mode || mode === 'undefined') {
+          mode = 'default';
+        }
+        executionMonitor.completeStep(sessionId, taskId, 'intent_detection', 'completed', `Mode maintained: ${mode} (confidence: ${intentResult.confidence})`);
       }
 
-      // Check for security operations in hacker mode
+      // Security operations monitoring
       let securityExecutionResult = null;
       if (mode === 'hacker') {
+        executionMonitor.addStep(sessionId, taskId, 'security_detection', 'Detecting security operations', 'Security Analyzer');
         const securityOp = await this.securityExecutor.detectSecurityOperation(message);
+        
         if (securityOp.isSecurityOperation && securityOp.tool && securityOp.args) {
+          executionMonitor.completeStep(sessionId, taskId, 'security_detection', 'completed', `Security operation detected: ${securityOp.tool}`);
           console.log(`🔧 Executing real security tool: ${securityOp.tool}`);
+          
+          // Start security execution step
+          const securityStepId = 'security_execution';
+          executionMonitor.addStep(
+            sessionId, 
+            taskId, 
+            securityStepId, 
+            `Executing ${securityOp.tool} security scan`,
+            securityOp.tool
+          );
+          
+          const securityStartTime = Date.now();
           securityExecutionResult = await this.securityExecutor.executeSecurityCommand(
             securityOp.tool, 
             securityOp.args, 
             securityOp.target
           );
+          
+          // Report real tool execution
+          executionMonitor.executeCommand(
+            sessionId,
+            taskId,
+            securityExecutionResult.command,
+            securityOp.tool,
+            securityExecutionResult.output,
+            securityExecutionResult.executionTime,
+            securityExecutionResult.success
+          );
+          
+          executionMonitor.completeStep(
+            sessionId, 
+            taskId, 
+            securityStepId,
+            securityExecutionResult.success ? 'completed' : 'failed',
+            securityExecutionResult.output,
+            securityExecutionResult.error
+          );
+          
           console.log(`✅ Security execution completed: ${securityExecutionResult.success}`);
+        } else {
+          executionMonitor.completeStep(sessionId, taskId, 'security_detection', 'completed', 'No security operations detected');
         }
       }
 
@@ -421,15 +492,23 @@ Please analyze this REAL tool output and provide professional security assessmen
       await this.saveConversation(sessionId, userId, 'assistant', response.content, mode);
       await this.extractAndSaveMemories(userId, message, response.content);
 
+      // Complete task monitoring
+      executionMonitor.completeTask(sessionId, taskId, 'completed');
+
       // Add metadata
       response.intent_detected = intentResult.detected_mode;
       response.confidence = intentResult.confidence;
       response.execution_time = Date.now() - startTime;
       response.mode = mode;
+      response.task_id = taskId;
 
       return response;
     } catch (error) {
       console.error('AI Service Error:', error);
+      
+      // Mark task as failed
+      executionMonitor.completeTask(sessionId, taskId, 'failed');
+      
       throw new Error('Failed to process AI request');
     }
   }
