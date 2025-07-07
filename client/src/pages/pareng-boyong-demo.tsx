@@ -16,6 +16,7 @@ import Context7Status from "@/components/context7-status";
 import { AdvancedAIInterface } from "@/components/AdvancedAIInterface";
 import { CopilotKitInterface } from "@/components/CopilotKitInterface";
 import { ExecutionStatus } from "@/components/ExecutionStatus";
+import { SimplifiedInterface } from "@/components/SimplifiedInterface";
 import { 
   ChatSkeleton, 
   WebViewSkeleton, 
@@ -45,7 +46,7 @@ export default function ParengBoyongDemo() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [loadingTabs, setLoadingTabs] = useState<Set<string>>(new Set());
-  const [showAdvancedInterface, setShowAdvancedInterface] = useState(true);
+  const [showAdvancedInterface, setShowAdvancedInterface] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -535,7 +536,33 @@ export default function ParengBoyongDemo() {
 
         {/* Main Content Area - Mobile takes full width */}
         <div className="flex-1 flex flex-col min-h-0 relative">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col min-h-0 h-full">
+          {/* Interface Toggle */}
+          <div className="flex justify-between items-center p-2 bg-black border-b border-purple-500/30">
+            <div className="flex items-center space-x-2">
+              <Button
+                size="sm"
+                variant={!showAdvancedInterface ? 'default' : 'outline'}
+                onClick={() => setShowAdvancedInterface(false)}
+                className="text-xs"
+              >
+                Simple
+              </Button>
+              <Button
+                size="sm"
+                variant={showAdvancedInterface ? 'default' : 'outline'}
+                onClick={() => setShowAdvancedInterface(true)}
+                className="text-xs"
+              >
+                Advanced
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {showAdvancedInterface ? 'All features' : 'Clean interface'}
+            </div>
+          </div>
+
+          {showAdvancedInterface ? (
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col min-h-0 h-full">
             {/* Tabs - Hidden on mobile, visible on desktop */}
             <div className="hidden lg:block border-b border-purple-500/30 bg-black px-1 py-0.5 flex-shrink-0 z-10">
               <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth grid grid-cols-6">
@@ -907,6 +934,11 @@ export default function ParengBoyongDemo() {
               </LoadingTransition>
             </TabsContent>
           </Tabs>
+          ) : (
+            <div className="flex-1 p-4">
+              <SimplifiedInterface sessionId={currentContext} />
+            </div>
+          )}
         </div>
       </div>
     </div>
