@@ -17,6 +17,7 @@ import { AdvancedAIInterface } from "@/components/AdvancedAIInterface";
 import { CopilotKitInterface } from "@/components/CopilotKitInterface";
 import { ExecutionStatus } from "@/components/ExecutionStatus";
 import { SimplifiedInterface } from "@/components/SimplifiedInterface";
+import { UnifiedInterface } from "@/components/UnifiedInterface";
 import { 
   ChatSkeleton, 
   WebViewSkeleton, 
@@ -28,6 +29,12 @@ import {
 // import innovateHubLogo from "@assets/innovatehub_1751536111664.png";
 
 export default function ParengBoyongDemo() {
+  // Check if we should use the unified interface
+  const useUnified = true; // Re-enabled after fixing Avatar components
+  
+  if (useUnified) {
+    return <UnifiedInterface sessionId="pareng-boyong-main" />;
+  }
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([
     {
@@ -47,6 +54,7 @@ export default function ParengBoyongDemo() {
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [loadingTabs, setLoadingTabs] = useState<Set<string>>(new Set());
   const [showAdvancedInterface, setShowAdvancedInterface] = useState(false);
+  const [useUnifiedInterface, setUseUnifiedInterface] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
