@@ -13,6 +13,9 @@ import BackgroundTasksPanel from "@/components/background-tasks-panel";
 import FileManagerPanel from "@/components/file-manager-panel";
 import { TerminalPanel } from "@/components/terminal-panel";
 import Context7Status from "@/components/context7-status";
+import { AdvancedAIInterface } from "@/components/AdvancedAIInterface";
+import { CopilotKitInterface } from "@/components/CopilotKitInterface";
+import { ExecutionStatus } from "@/components/ExecutionStatus";
 import { 
   ChatSkeleton, 
   WebViewSkeleton, 
@@ -42,6 +45,7 @@ export default function ParengBoyongDemo() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isTabLoading, setIsTabLoading] = useState(false);
   const [loadingTabs, setLoadingTabs] = useState<Set<string>>(new Set());
+  const [showAdvancedInterface, setShowAdvancedInterface] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -522,7 +526,7 @@ export default function ParengBoyongDemo() {
           <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col min-h-0 h-full">
             {/* Tabs - Hidden on mobile, visible on desktop */}
             <div className="hidden lg:block border-b border-purple-500/30 bg-black px-1 py-0.5 flex-shrink-0 z-10">
-              <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth grid grid-cols-5">
+              <TabsList className="bg-gray-800/50 border border-gray-600/50 w-full justify-start overflow-x-auto scrollbar-hide scroll-smooth grid grid-cols-6">
                 <TabsTrigger 
                   value="chat" 
                   className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
@@ -530,6 +534,14 @@ export default function ParengBoyongDemo() {
                   <Terminal className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Chat</span>
                   <span className="sm:hidden">💬</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="advanced" 
+                  className="data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400 flex-shrink-0 text-xs sm:text-sm"
+                >
+                  <Activity className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">CopilotKit</span>
+                  <span className="sm:hidden">🤖</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="webview" 
@@ -716,6 +728,21 @@ export default function ParengBoyongDemo() {
                   )}
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="advanced" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden">
+              <LoadingTransition
+                isLoading={loadingTabs.has('advanced')}
+                skeleton={<ChatSkeleton />}
+              >
+                <div className="h-full">
+                  <AdvancedAIInterface 
+                    sessionId={currentContext}
+                    mode={selectedMode}
+                    onModeChange={setSelectedMode}
+                  />
+                </div>
+              </LoadingTransition>
             </TabsContent>
 
             <TabsContent value="webview" className="flex-1 m-0 p-0 h-full min-h-0 overflow-hidden relative">

@@ -45,7 +45,7 @@ export class AIService {
   private genai: GoogleGenAI | null = null;
   private openai: OpenAI | null = null;
 
-  constructor(private sessionId: string, private wsClients?: Map<string, any>) {
+  constructor(private sessionId: string) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
     this.securityExecutor = new RealSecurityExecutor(sessionId);
@@ -53,23 +53,7 @@ export class AIService {
     this.initializeAI();
   }
 
-  private emitExecutionEvent(sessionId: string, event: any): void {
-    if (this.wsClients) {
-      const sessionClients = Array.from(this.wsClients.values()).filter(
-        client => client.sessionId === sessionId
-      );
-      
-      sessionClients.forEach(client => {
-        if (client.ws && client.ws.readyState === 1) {
-          try {
-            client.ws.send(JSON.stringify(event));
-          } catch (error) {
-            console.error('Failed to emit execution event:', error);
-          }
-        }
-      });
-    }
-  }
+
 
   private async initializeCognitive(): Promise<void> {
     try {
