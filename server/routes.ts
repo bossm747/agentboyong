@@ -798,6 +798,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Real security tools endpoint 
+  app.get('/api/pareng-boyong/tools', async (req: Request, res: Response) => {
+    try {
+      const { toolDetectionService } = await import('./services/toolDetectionService.js');
+      const tools = await toolDetectionService.scanAvailableTools();
+      
+      res.json({
+        success: true,
+        tools: tools,
+        count: tools.length,
+        categories: tools.map(t => t.category).filter((cat, idx, arr) => arr.indexOf(cat) === idx),
+        scan_timestamp: new Date().toISOString(),
+        note: 'These are real security tools, not simulated'
+      });
+    } catch (error) {
+      console.error('Tools scan error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to scan security tools',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   app.get('/api/pareng-boyong/status', (req: Request, res: Response) => {
     res.json({
       status: 'active',

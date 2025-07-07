@@ -7,6 +7,7 @@ import { intentDetectionService } from './intentDetectionService.js';
 import { intelligentContext7 } from './intelligentContext7.js';
 import { intelligentVerification } from './intelligentVerificationService.js';
 import { context7Service } from './context7Service.js';
+import RealSecurityExecutor from './realSecurityExecutor.js';
 import { db } from '../db.js';
 import { conversations, memories, knowledge, InsertConversation, InsertMemory } from '../../shared/schema.js';
 import { eq, desc } from 'drizzle-orm';
@@ -38,6 +39,7 @@ export class AIService {
   private fileSystem: FileSystemService;
   private terminal: TerminalService;
   private cognitive?: CognitiveService;
+  private securityExecutor: RealSecurityExecutor;
   private conversationHistory: Map<string, AIMessage[]> = new Map();
   private genai: GoogleGenAI | null = null;
   private openai: OpenAI | null = null;
@@ -45,6 +47,7 @@ export class AIService {
   constructor(private sessionId: string) {
     this.fileSystem = new FileSystemService(sessionId);
     this.terminal = new TerminalService(sessionId);
+    this.securityExecutor = new RealSecurityExecutor(sessionId);
     this.initializeCognitive();
     this.initializeAI();
   }
@@ -362,11 +365,37 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
         mode = 'default';
       }
 
+      // Check for security operations in hacker mode
+      let securityExecutionResult = null;
+      if (mode === 'hacker') {
+        const securityOp = await this.securityExecutor.detectSecurityOperation(message);
+        if (securityOp.isSecurityOperation && securityOp.tool && securityOp.args) {
+          console.log(`🔧 Executing real security tool: ${securityOp.tool}`);
+          securityExecutionResult = await this.securityExecutor.executeSecurityCommand(
+            securityOp.tool, 
+            securityOp.args, 
+            securityOp.target
+          );
+          console.log(`✅ Security execution completed: ${securityExecutionResult.success}`);
+        }
+      }
+
       // Load memory context
       const memoryContext = await this.loadMemoryContext(userId, sessionId);
 
-      // Build intelligent prompt
-      const intelligentPrompt = await this.buildIntelligentPrompt(memoryContext, mode, message);
+      // Build intelligent prompt - include real execution results if available
+      let intelligentPrompt = await this.buildIntelligentPrompt(memoryContext, mode, message);
+      
+      if (securityExecutionResult) {
+        intelligentPrompt += `\n\nREAL SECURITY TOOL EXECUTION RESULT:
+Command: ${securityExecutionResult.command}
+Success: ${securityExecutionResult.success}
+Output: ${securityExecutionResult.output}
+${securityExecutionResult.error ? `Error: ${securityExecutionResult.error}` : ''}
+Execution Time: ${securityExecutionResult.executionTime}ms
+
+Please analyze this REAL tool output and provide professional security assessment based on the actual results, not assumptions.`;
+      }
 
       // Process with AI
       let response: AIResponse;
@@ -379,6 +408,12 @@ Remember: I am Pareng Boyong, your enhanced Agent-Zero security specialist, oper
           content: "I need API keys to provide intelligent responses. Please configure GEMINI_API_KEY or OPENAI_API_KEY.",
           model: "InnovateHub AI"
         };
+      }
+
+      // Add real execution metadata if security tools were used
+      if (securityExecutionResult) {
+        response.tools_used = [securityExecutionResult.command];
+        response.content = `🔧 REAL SECURITY TOOL EXECUTED\n\n${response.content}`;
       }
 
       // Save conversation and extract memories
